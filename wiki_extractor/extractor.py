@@ -23,9 +23,9 @@ class Extractor:
     keepSections = True
     HtmlFormatting = False
     templatePrefix = ''
-    discardSections = None
-    discardTemplates = None
-    ignoreTemplates = None
+    discardSections = set()
+    discardTemplates = set()
+    ignoreTemplates = set()
     to_json = False
     to_txt = True
     markdown = False

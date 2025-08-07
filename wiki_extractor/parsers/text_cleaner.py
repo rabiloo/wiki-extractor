@@ -102,29 +102,26 @@ def cleanup_text(text, html_safe=True):
 
 
 def compact(text, mark_headers=False):
+    """Deal with headers, lists, empty sections, residuals of tables.
+    :param text: convert to HTML
     """
-    Deal with headers, lists, empty sections, residuals of tables.
-    
-    Args:
-        text: Text to convert
-        mark_headers: Whether to mark headers with markdown-style prefixes
-        
-    Returns:
-        List of processed paragraphs
-    """
-    page = []  # list of paragraphs
+    # Import here to avoid circular imports
+    from ..extractor import Extractor
+
+    page = []  # list of paragraph
     headers = {}  # Headers for unfilled sections
-    empty_section = False  # empty sections are discarded
-    skip_section = False  # sections to discard
-    list_level = ''  # nesting of lists
+    emptySection = False  # empty sections are discarded
+    skipSection = False  #  sections to discard
+    listLevel = ''  # nesting of lists
     title = ''
 
     for line in text.split('\n'):
+
         if not line:
-            if len(list_level):  # implies Extractor.HtmlFormatting
-                for c in reversed(list_level):
+            if len(listLevel):    # implies Extractor.HtmlFormatting
+                for c in reversed(listLevel):
                     page.append(LIST_CLOSE[c])
-                list_level = ''
+                    listLevel = ''
             continue
 
         # Handle section titles
@@ -132,33 +129,32 @@ def compact(text, mark_headers=False):
         if m:
             title = m.group(2)
 
-            # Check if this section should be discarded
-            if hasattr(compact, '_discard_sections') and compact._discard_sections:
-                if title.lower() in compact._discard_sections:
-                    skip_section = True
-                    empty_section = True
-                    continue
-                else:
-                    skip_section = False
-            
+            # Discard non-desired sections
+            if(title.lower() in Extractor.discardSections):
+                skipSection = True
+                emptySection = True
+                continue
+            else:
+                skipSection = False
+
+
             lev = len(m.group(1))
-            if hasattr(compact, '_html_formatting') and compact._html_formatting:
+            if Extractor.HtmlFormatting:
                 page.append("<h%d>%s</h%d>" % (lev, title, lev))
-            
             if title and title[-1] not in '!?':
                 title += '.'
 
             if mark_headers:
-                title = "#" * lev + " " + title
+                title = "#"*lev + " " + title
 
             headers[lev] = title
-            # Drop previous headers
-            headers = {k: v for k, v in headers.items() if k <= lev}
-            empty_section = True
+            # drop previous headers
+            headers = { k:v for k,v in headers.items() if k <= lev }
+            emptySection = True
             continue
 
         # Handle non-desired sections content
-        if skip_section:
+        if (skipSection):
             continue
 
         # Handle page title
@@ -170,72 +166,88 @@ def compact(text, mark_headers=False):
                 page.append(title)
                 continue
 
-        # Handle indents
+        # handle indents  # SOmetimes are indents before lists,etc.
         elif line[0] == ':':
+            #page.append(line.lstrip(':'))
             line = line.lstrip(':')
-            if len(line) < 1:
+            if(len(line)<1):
                 continue
 
-        # Handle lists
-        if line[0] in '*#;':
-            if hasattr(compact, '_html_formatting') and compact._html_formatting:
-                # HTML output format
+
+        # handle lists
+        #   @see https://www.mediawiki.org/wiki/Help:Formatting
+        #elif line[0] in '*#;': # lists and enumerations
+        if line[0] in '*#;': # lists and enumerations
+            if Extractor.HtmlFormatting: #HTML output format
+                # close extra levels
                 l = 0
-                for c in list_level:
+                for c in listLevel:
                     if l < len(line) and c != line[l]:
-                        for extra in reversed(list_level[l:]):
+                        for extra in reversed(listLevel[l:]):
                             page.append(LIST_CLOSE[extra])
-                        list_level = list_level[:l]
+                        listLevel = listLevel[:l]
                         break
                     l += 1
                 if l < len(line) and line[l] in '*#;:':
-                    # Add new level
-                    type_char = line[l]
-                    page.append(LIST_OPEN[type_char])
-                    list_level += type_char
+                    # add new level (only one, no jumps)
+                    # FIXME: handle jumping levels
+                    type = line[l]
+                    page.append(LIST_OPEN[type])
+                    listLevel += type
                     line = line[l+1:].strip()
                 else:
-                    # Continue on same level
-                    type_char = line[l-1]
+                    # continue on same level
+                    type = line[l-1]
                     line = line[l:].strip()
-                page.append(LIST_ITEM[type_char] % line)
-            else:
-                # Text or JSON format
+                page.append(LIST_ITEM[type] % line)
+
+            else: # txt or json: (maintaining depth levels)
+                # Here the first line in the section is a list
                 if len(headers):
-                    if hasattr(compact, '_keep_sections') and compact._keep_sections:
+                    if Extractor.keepSections:
                         items = sorted(headers.items())
                         page.append('\n')
                         for (i, v) in items:
-                            page.append(v)
+                            page.append(v) #header title
                     headers.clear()
-                list_item = re.sub('[;#\*]', ' ', line)
-                list_item = re.sub("(^ *)(.+)", r"\1- \2", list_item)
+                list_item = re.sub('[;#\*]',' ', line)
+                #Fixme? sometimes list before indent: "#:"
+                list_item= re.sub("(^ *)(.+)",r"\1- \2",list_item)
                 page.append(list_item)
-                empty_section = False
+                emptySection = False
 
-        elif len(list_level):  # implies HTML formatting
-            for c in reversed(list_level):
+
+
+        elif len(listLevel):    # implies Extractor.HtmlFormatting
+            for c in reversed(listLevel):
                 page.append(LIST_CLOSE[c])
-            list_level = []
+            listLevel = []
 
-        # Drop residuals of lists and tables
+        # Drop residuals of lists
         elif line[0] in '{|' or line[-1] == '}':
             continue
         # Drop irrelevant lines
         elif (line[0] == '(' and line[-1] == ')') or line.strip('.-') == '':
             continue
 
+
         # Write header if not an empty section
         elif len(headers):
-            if hasattr(compact, '_keep_sections') and compact._keep_sections:
+            if Extractor.keepSections:
                 items = sorted(headers.items())
                 page.append('\n')
                 for (i, v) in items:
-                    page.append(v)
+                    page.append(v) #header title
             headers.clear()
+            #   here we control a section where there is a list before
+            #      text content
             page.append(line)  # first line
-            empty_section = False
-        elif not empty_section:
+            emptySection = False
+        elif not emptySection:
             page.append(line)
+            # dangerous
+            # # Drop preformatted
+            # elif line[0] == ' ':
+            #     continue
 
     return page
