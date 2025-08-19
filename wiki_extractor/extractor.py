@@ -11,6 +11,10 @@ from .templates.magic_words import MagicWords
 from .parsers.text_cleaner import clean, compact
 from .config.settings import FILE_SEPARATOR
 from .template_processor import TemplateProcessor
+# ===========================================================================
+
+# Program version
+__version__ = "3.0.0"
 
 
 class Extractor:

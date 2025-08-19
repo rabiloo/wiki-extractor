@@ -1,7 +1,8 @@
 """Setup script for WikiExtractor package."""
+import re
 
 from setuptools import setup, find_packages
-import os
+from wiki_extractor.extractor import __version__
 
 # Read the README file
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -11,17 +12,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
 with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
 
-# Read version from __init__.py
-def get_version():
-    with open("__init__.py", "r", encoding="utf-8") as fh:
-        for line in fh:
-            if line.startswith("__version__"):
-                return line.split("=")[1].strip().strip('"').strip("'")
-    return "0.0.0"
+def get_version(version):
+    if re.match(r'^\d+\.\d+$', version):
+        return version + '.0'
+    return version
 
 setup(
     name="wiki-extractor",
-    version=get_version(),
+    version=get_version(__version__),
     author="WikiExtractor Contributors",
     author_email="",
     description="A Python library for extracting clean text from Wikipedia articles",
