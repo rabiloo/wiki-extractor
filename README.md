@@ -33,70 +33,34 @@ pip install wiki-extractor
 ### Basic Usage
 
 ```python
-from wiki_extractor import extract_text
+"""
+Basic usage example for WikiExtractor
+Simple demonstration with Wikipedia URL
+"""
 
-# Extract clean text from a Wikipedia article
-article_id = "12345"
-revision_id = "67890"
-url_base = "https://en.wikipedia.org/wiki/"
-title = "Example Article"
-content = "{{template}} This is the article content with [[links]] and '''formatting'''."
+from wiki_extractor.extractor import Extractor
 
-# Extract clean text
-clean_paragraphs = extract_text(
-    article_id=article_id,
-    revision_id=revision_id,
-    url_base=url_base,
-    title=title,
-    content=content,
-    expand_templates=True,
-    markdown=False
+# Example raw Wikipedia markup (usually fetched via the Wikipedia API)
+raw_text = """
+{{Short description|Quantum algorithm}}
+'''Shor's algorithm''' is a [[quantum algorithm]] for integer factorization...
+"""
+
+# Initialize extractor
+extractor = Extractor(
+    id="1",
+    revid="101",
+    urlbase="https://en.wikipedia.org/wiki",
+    title="Shor's algorithm",
+    page=raw_text
 )
 
-print(clean_paragraphs)
-```
+# Extract clean text (list of paragraphs)
+result = extractor.clean_text(raw_text)
 
-### Advanced Usage
+print("Number of paragraphs:", len(result))
+print("First paragraph:", result[0])
 
-```python
-from wiki_extractor import Extractor, create_extractor
-
-# Create an extractor instance for more control
-extractor = create_extractor(
-    article_id="12345",
-    revision_id="67890", 
-    url_base="https://en.wikipedia.org/wiki/",
-    title="Example Article",
-    content=["Line 1 of content", "Line 2 of content"]
-)
-
-# Configure extraction options
-extractor.keepLinks = True
-extractor.markdown = True
-extractor.language = 'en'
-
-# Extract text with custom settings
-text = extractor.clean_text(
-    "Article content here",
-    mark_headers=True,
-    expand_templates=True,
-    html_safe=True
-)
-```
-
-### JSON Output
-
-```python
-from wiki_extractor import process_article_to_json
-
-result = process_article_to_json(
-    article_id="12345",
-    revision_id="67890",
-    url_base="https://en.wikipedia.org/wiki/",
-    title="Example Article", 
-    content="Article content",
-    language="en"
-)
 ```
 
 ## Configuration
@@ -111,33 +75,9 @@ The library provides several configuration options:
 - `discardSections`: Set of section titles to discard
 - `discardTemplates`: Set of template names to discard
 
-## Project Structure
-
-```
-wiki_extractor/
-├── core/                   # Core extraction logic
-│   ├── extractor.py       # Main Extractor class
-│   └── template_processor.py  # Template processing
-├── parsers/               # Text processing modules
-│   ├── text_cleaner.py    # Main text cleaning
-│   ├── html_processor.py  # HTML element processing
-│   ├── link_processor.py  # Link processing
-│   └── math_processor.py  # Math formula processing
-├── templates/             # Template handling
-│   ├── magic_words.py     # MediaWiki magic words
-│   └── template_engine.py # Template expansion engine
-├── utils/                 # Utility functions
-│   ├── text_utils.py      # Text manipulation utilities
-│   └── regex_patterns.py  # Compiled regex patterns
-├── config/                # Configuration
-│   └── settings.py        # Default settings
-└── main.py               # Main entry point and convenience functions
-```
-
 ## Dependencies
 
-- Python 3.6+
-- BeautifulSoup4 (for HTML parsing)
+- Python 3.10+
 
 ## Contributing
 
