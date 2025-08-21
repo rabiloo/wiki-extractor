@@ -1,14 +1,14 @@
 """Tests for text cleaning functionality."""
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from wiki_extractor.parsers.text_cleaner import clean, compact, cleanup_text
 from wiki_extractor.extractor import Extractor
+from wiki_extractor.text_cleaner import clean, cleanup_text, compact
 
 
 class TestTextCleaner(unittest.TestCase):

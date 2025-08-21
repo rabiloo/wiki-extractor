@@ -1,30 +1,37 @@
 import re
-
-from .utils import ucfirst, lcfirst, fully_qualified_template_title
 from urllib.parse import quote as urlencode
 
-class Infix:
-    """Infix operator for parser functions."""
 
-    def __init__(self, function):
-        self.function = function
+def ucfirst(string: str) -> str:
+    """Capitalize the first character of a string."""
+    if string:
+        return string[0].upper() + string[1:] if len(string) > 1 else string.upper()
+    return ''
 
-    def __ror__(self, other):
-        return Infix(lambda x, self, other: self.function(other, x))
 
-    def __or__(self, other):
-        return self.function(other)
+def lcfirst(string: str) -> str:
+    """Lowercase the first character of a string."""
+    if string:
+        return string[0].lower() + string[1:] if len(string) > 1 else string.lower()
+    return ''
 
-    def __rlshift__(self, other):
-        return Infix(lambda x, self, other: self.function(other, x))
 
-    def __rshift__(self, other):
-        return self.function(other)
+def normalize_namespace(ns: str) -> str:
+    """Normalize a namespace by capitalizing the first character."""
+    return ucfirst(ns)
 
-    def __call__(self, value1, value2):
-        return self.function(value1, value2)
 
-ROUND = Infix(lambda x, y: round(x, y))
+def fully_qualified_template_title(template_title: str, template_prefix: str = '') -> str:
+    """Determine the namespace of a template title."""
+    if template_title.startswith(':'):
+        return ucfirst(template_title[1:])
+    match = re.match(r'([^:]*)(:.*)', template_title)
+    if match:
+        prefix = normalize_namespace(match.group(1))
+        if prefix in {'Template'}:
+            return f"{prefix}{ucfirst(match.group(2))}"
+    return f"{template_prefix}{ucfirst(template_title)}" if template_title else ''
+
 
 def sharp_expr(expr: str) -> str:
     """Evaluate a mathematical expression."""
@@ -34,8 +41,9 @@ def sharp_expr(expr: str) -> str:
         expr = re.sub(r'\bdiv\b', '/', expr)
         expr = re.sub(r'\bround\b', '|ROUND|', expr)
         return str(eval(expr))
-    except:
+    except Exception:
         return '<span class="error"></span>'
+
 
 def sharp_if(test_value: str, value_if_true: str, value_if_false: str = None, *args) -> str:
     """Implement #if parser function."""
@@ -47,6 +55,7 @@ def sharp_if(test_value: str, value_if_true: str, value_if_false: str = None, *a
         return value_if_false.strip()
     return ""
 
+
 def sharp_ifeq(lvalue: str, rvalue: str, value_if_true: str, value_if_false: str = None, *args) -> str:
     """Implement #ifeq parser function."""
     rvalue = rvalue.strip()
@@ -57,11 +66,13 @@ def sharp_ifeq(lvalue: str, rvalue: str, value_if_true: str, value_if_false: str
         return value_if_false.strip()
     return ""
 
+
 def sharp_iferror(test: str, then: str = '', else_val: str = None, *args) -> str:
     """Implement #iferror parser function."""
     if re.match(r'<(?:strong|span|p|div)\s(?:[^\s>]*\s+)*?class="(?:[^"\s>]*\s+)*?error(?:\s[^">]*)?"', test):
         return then
     return test.strip() if else_val is None else else_val.strip()
+
 
 def sharp_switch(primary: str, *params) -> str:
     """Implement #switch parser function."""
@@ -81,18 +92,20 @@ def sharp_switch(primary: str, *params) -> str:
         rvalue = None
     return lvalue if rvalue is not None else default or ''
 
-def sharp_invoke(module: str, function: str, frame: list) -> str:
-    """Implement #invoke parser function."""
-    functions = modules.get(module, {})
-    funct = functions.get(function)
-    if funct:
-        template_title = fully_qualified_template_title(function)
-        pair = next((x for x in frame if x[0] == template_title), None)
-        if pair:
-            params = [pair[1].get(str(i + 1)) for i in range(len(pair[1]))]
-            return funct(*params)
-        return funct()
-    return ""
+
+# def sharp_invoke(module: str, function: str, frame: list) -> str:
+#     """Implement #invoke parser function."""
+#     functions = modules.get(module, {})
+#     funct = functions.get(function)
+#     if funct:
+#         template_title = fully_qualified_template_title(function)
+#         pair = next((x for x in frame if x[0] == template_title), None)
+#         if pair:
+#             params = [pair[1].get(str(i + 1)) for i in range(len(pair[1]))]
+#             return funct(*params)
+#         return funct()
+#     return ""
+
 
 def call_parser_function(function_name: str, args: list, frame: list) -> str:
     """Call a parser function with the given arguments."""
@@ -118,12 +131,10 @@ def call_parser_function(function_name: str, args: list, frame: list) -> str:
         'padleft': lambda char, width, string: string.ljust(char, int(width)),
     }
     try:
-        if function_name == '#invoke':
-            return sharp_invoke(args[0].strip(), args[1].strip(), frame)
+        # if function_name == '#invoke':
+        #     return sharp_invoke(args[0].strip(), args[1].strip(), frame)
         if function_name in parser_functions:
             return parser_functions[function_name](*args)
-    except:
+    except Exception:
         return ""
     return ""
-
-modules = {}  # Placeholder for extension modules

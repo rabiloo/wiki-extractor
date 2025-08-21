@@ -1,8 +1,8 @@
 """Tests for the core Extractor class."""
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

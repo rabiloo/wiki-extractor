@@ -4,8 +4,99 @@ Handles MediaWiki template processing
 """
 
 import logging
-from ..utils.text_utils import find_matching_braces, split_parts
-from ..config.settings import MAX_PARAMETER_RECURSION_LEVELS
+import re
+
+MAX_PARAMETER_RECURSION_LEVELS = 16
+
+
+def find_matching_braces(text, num_braces):
+    """
+    Find matching braces in text.
+
+    Args:
+        text: Text to search
+        num_braces: Number of braces to match (2 for {{, 3 for {{{)
+
+    Returns:
+        List of (start, end) positions of matching braces
+    """
+    open_delim = '{' * num_braces
+    close_delim = '}' * num_braces
+
+    spans = []
+    stack = []
+
+    i = 0
+    while i < len(text):
+        if text[i:].startswith(open_delim):
+            stack.append(i)
+            i += num_braces
+        elif text[i:].startswith(close_delim):
+            if stack:
+                start = stack.pop()
+                spans.append((start, i + num_braces))
+            i += num_braces
+        else:
+            i += 1
+
+    return spans
+
+
+def split_parts(text):
+    """
+    Split template or function parameters by pipes, respecting nested structures.
+
+    Args:
+        text: Text to split
+
+    Returns:
+        List of parameter parts
+    """
+    parts = []
+    current = ''
+    depth = 0
+
+    i = 0
+    while i < len(text):
+        char = text[i]
+
+        if char == '{':
+            if i + 1 < len(text) and text[i + 1] == '{':
+                depth += 1
+                current += '{{'
+                i += 2
+                continue
+        elif char == '}':
+            if i + 1 < len(text) and text[i + 1] == '}':
+                depth -= 1
+                current += '}}'
+                i += 2
+                continue
+        elif char == '[':
+            if i + 1 < len(text) and text[i + 1] == '[':
+                depth += 1
+                current += '[['
+                i += 2
+                continue
+        elif char == ']':
+            if i + 1 < len(text) and text[i + 1] == ']':
+                depth -= 1
+                current += ']]'
+                i += 2
+                continue
+        elif char == '|' and depth == 0:
+            parts.append(current)
+            current = ''
+            i += 1
+            continue
+
+        current += char
+        i += 1
+
+    if current:
+        parts.append(current)
+
+    return parts
 
 
 class Template(list):
@@ -29,11 +120,11 @@ class Template(list):
         # {{{1|{{PAGENAME}}}
         # {{{italics|{{{italic|}}}
         # {{#if:{{{{{#if:{{{nominee|}}}|nominee|candidate}}|}}}|
-        
+
         start = 0
         for s, e in find_matching_braces(body, 3):
             tpl.append(TemplateText(body[start:s]))
-            tpl.append(TemplateArg(body[s+3:e-3]))
+            tpl.append(TemplateArg(body[s + 3:e - 3]))
             start = e
         tpl.append(TemplateText(body[start:]))  # leftover
         return tpl
@@ -90,7 +181,7 @@ class TemplateArg:
     Parameter to a template.
     Has a name and a default value, both of which are Templates.
     """
-    
+
     def __init__(self, parameter):
         """
         Initialize template argument.
@@ -104,7 +195,7 @@ class TemplateArg:
 
         # Any parts in a template argument after the first (the parameter default) are
         # ignored, and an equals sign in the first part is treated as plain text.
-        
+
         parts = split_parts(parameter)
         self.name = Template.parse(parts[0])
         if len(parts) > 1:
@@ -134,18 +225,18 @@ class TemplateArg:
         """
         # The parameter name itself might contain templates, e.g.:
         # appointe{{#if:{{{appointer14|}}}|r|d}}14|
-        param_name = self.name.subst(params, extractor, depth+1)
+        param_name = self.name.subst(params, extractor, depth + 1)
         param_name = extractor.expandTemplates(param_name)
-        
+
         result = ''
         if param_name in params:
             result = params[param_name]  # use parameter value specified in template invocation
         elif self.default:  # use the default value
-            default_value = self.default.subst(params, extractor, depth+1)
+            default_value = self.default.subst(params, extractor, depth + 1)
             result = extractor.expandTemplates(default_value)
             if result is None:
                 return ''
-        
+
         return result
 
 
@@ -175,7 +266,7 @@ def parse_template_parameters(parameters):
     # the value 'a', parameter 2 value is not defined, and parameter 3 gets
     # the value 'c'. This case is correctly handled by function 'split',
     # and does not require any special handling.
-    
+
     for param in parameters:
         # Spaces before or after a parameter value are normally ignored,
         # UNLESS the parameter contains a link (to prevent possible gluing
@@ -192,7 +283,6 @@ def parse_template_parameters(parameters):
         # any previous ones.
 
         try:
-            import re
             m = re.match(r" *([^=']*?) *=(.*)", param, re.DOTALL)
         except TypeError:
             continue
@@ -216,6 +306,6 @@ def parse_template_parameters(parameters):
             if ']]' not in param:  # if the value does not contain a link, trim whitespace
                 param = param.strip()
             template_params[str(unnamed_parameter_counter)] = param
-    
+
     logging.debug('   templateParams> %s', '|'.join(template_params.values()))
     return template_params
