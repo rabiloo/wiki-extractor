@@ -2,37 +2,86 @@
 HTML processing for WikiExtractor
 Handles HTML tag processing, formatting, and cleanup
 """
+
 import re
 from html.entities import name2codepoint
 
 # Placeholder tags
-PLACEHOLDER_TAGS: dict[str, str] = {'math': 'formula', 'code': 'codice'}
+PLACEHOLDER_TAGS: dict[str, str] = {"math": "formula", "code": "codice"}
 
 # Tags to ignore (keep content, drop tags)
 IGNORED_TAGS: tuple[str, ...] = (
-    'abbr', 'b', 'big', 'blockquote', 'center', 'cite', 'div', 'em',
-    'font', 'h1', 'h2', 'h3', 'h4', 'hiero', 'i', 'kbd', 'nowiki',
-    'p', 'plaintext', 's', 'span', 'strike', 'strong',
-    'sub', 'sup', 'tt', 'u', 'var'
+    "abbr",
+    "b",
+    "big",
+    "blockquote",
+    "center",
+    "cite",
+    "div",
+    "em",
+    "font",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "hiero",
+    "i",
+    "kbd",
+    "nowiki",
+    "p",
+    "plaintext",
+    "s",
+    "span",
+    "strike",
+    "strong",
+    "sub",
+    "sup",
+    "tt",
+    "u",
+    "var",
 )
 
 # Elements to discard from article text
 DISCARD_ELEMENTS: list[str] = [
-    'gallery', 'timeline', 'noinclude', 'pre',
-    'table', 'tr', 'td', 'th', 'caption', 'div',
-    'form', 'input', 'select', 'option', 'textarea',
-    'ul', 'li', 'ol', 'dl', 'dt', 'dd', 'menu', 'dir',
-    'ref', 'references', 'img', 'imagemap', 'source', 'small',
+    "gallery",
+    "timeline",
+    "noinclude",
+    "pre",
+    "table",
+    "tr",
+    "td",
+    "th",
+    "caption",
+    "div",
+    "form",
+    "input",
+    "select",
+    "option",
+    "textarea",
+    "ul",
+    "li",
+    "ol",
+    "dl",
+    "dt",
+    "dd",
+    "menu",
+    "dir",
+    "ref",
+    "references",
+    "img",
+    "imagemap",
+    "source",
+    "small",
 ]
 
 # Self-closing HTML tags
-SELF_CLOSING_TAGS: tuple[str, ...] = ('br', 'hr', 'nobr', 'ref', 'references', 'nowiki')
+SELF_CLOSING_TAGS: tuple[str, ...] = ("br", "hr", "nobr", "ref", "references", "nowiki")
 
 # HTML and XML patterns
 BOLD_ITALIC_RE: re.Pattern = re.compile(r"'''''(.*?)'''''")
 BOLD_RE: re.Pattern = re.compile(r"'''(.*?)'''")
-COMMENT_RE: re.Pattern = re.compile(r'<!--.*?-->', re.DOTALL)
-SYNTAXHIGHLIGHT_RE: re.Pattern = re.compile(r'&lt;syntaxhighlight .*?&gt;(.*?)&lt;/syntaxhighlight&gt;', re.DOTALL)
+COMMENT_RE: re.Pattern = re.compile(r"<!--.*?-->", re.DOTALL)
+SYNTAXHIGHLIGHT_RE: re.Pattern = re.compile(r"&lt;syntaxhighlight .*?&gt;(.*?)&lt;/syntaxhighlight&gt;", re.DOTALL)
 
 # Bold and italic patterns
 ITALIC_QUOTE_RE: re.Pattern = re.compile(r"''\"([^\"]*?)\"''")
@@ -41,7 +90,7 @@ QUOTE_QUOTE_RE: re.Pattern = re.compile(r'""([^"]*?)""')
 
 # Self-closing tag patterns
 SELF_CLOSING_PATTERNS: list[re.Pattern] = [
-    re.compile(r'<\s*%s\b[^>]*/\s*>' % tag, re.DOTALL | re.IGNORECASE) for tag in SELF_CLOSING_TAGS
+    re.compile(r"<\s*%s\b[^>]*/\s*>" % tag, re.DOTALL | re.IGNORECASE) for tag in SELF_CLOSING_TAGS
 ]
 
 
@@ -50,8 +99,8 @@ def _create_ignored_tag_patterns() -> list[tuple[re.Pattern, re.Pattern]]:
     """Create patterns for ignored HTML tags"""
     patterns: list[tuple[re.Pattern, re.Pattern]] = []
     for tag in IGNORED_TAGS:
-        left: re.Pattern = re.compile(r'<%s\b.*?>' % tag, re.IGNORECASE | re.DOTALL)
-        right: re.Pattern = re.compile(r'</\s*%s>' % tag, re.IGNORECASE)
+        left: re.Pattern = re.compile(r"<%s\b.*?>" % tag, re.IGNORECASE | re.DOTALL)
+        right: re.Pattern = re.compile(r"</\s*%s>" % tag, re.IGNORECASE)
         patterns.append((left, right))
     return patterns
 
@@ -62,8 +111,7 @@ def _create_placeholder_tag_patterns() -> list[tuple[re.Pattern, str]]:
     patterns: list[tuple[re.Pattern, str]] = []
     for tag, repl in PLACEHOLDER_TAGS.items():
         pattern: re.Pattern = re.compile(
-            r'<\s*%s(\s*| [^>]+?)>.*?<\s*/\s*%s\s*>' % (tag, tag),
-            re.DOTALL | re.IGNORECASE
+            r"<\s*%s(\s*| [^>]+?)>.*?<\s*/\s*%s\s*>" % (tag, tag), re.DOTALL | re.IGNORECASE
         )
         patterns.append((pattern, repl))
     return patterns
@@ -146,27 +194,27 @@ def _unescape(text: str) -> str:
 def _process_html_formatting(text: str, html_formatting: bool = False) -> str:
     """
     Process bold/italic formatting in text.
-    
+
     Args:
         text: Text to process
         html_formatting: Whether to use HTML tags or plain text formatting
-        
+
     Returns:
         Text with formatting applied
     """
     if html_formatting:
-        text = BOLD_ITALIC_RE.sub(r'<b>\1</b>', text)
-        text = BOLD_RE.sub(r'<b>\1</b>', text)
-        text = ITALIC_RE.sub(r'<i>\1</i>', text)
+        text = BOLD_ITALIC_RE.sub(r"<b>\1</b>", text)
+        text = BOLD_RE.sub(r"<b>\1</b>", text)
+        text = ITALIC_RE.sub(r"<i>\1</i>", text)
     else:
-        text = BOLD_ITALIC_RE.sub(r'\1', text)
-        text = BOLD_RE.sub(r'\1', text)
+        text = BOLD_ITALIC_RE.sub(r"\1", text)
+        text = BOLD_RE.sub(r"\1", text)
         text = ITALIC_QUOTE_RE.sub(r'"\1"', text)
         text = ITALIC_RE.sub(r'"\1"', text)
         text = QUOTE_QUOTE_RE.sub(r'"\1"', text)
 
     # Clean up residuals of unbalanced quotes
-    text = text.replace("'''", '').replace("''", '"')
+    text = text.replace("'''", "").replace("''", '"')
 
     return text
 
@@ -174,19 +222,19 @@ def _process_html_formatting(text: str, html_formatting: bool = False) -> str:
 def _process_syntax_highlighting(text: str) -> str:
     """
     Process syntax highlighting tags, preserving their content.
-    
+
     Args:
         text: Text containing syntax highlighting
-        
+
     Returns:
         Text with syntax highlighting processed
     """
-    result: str = ''
+    result: str = ""
     cur: int = 0
 
     for match in SYNTAXHIGHLIGHT_RE.finditer(text):
         end: int = match.end()
-        result += _unescape(text[cur:match.start()]) + match.group(1)
+        result += _unescape(text[cur : match.start()]) + match.group(1)
         cur = end
 
     result += _unescape(text[cur:])
@@ -196,10 +244,10 @@ def _process_syntax_highlighting(text: str) -> str:
 def _collect_html_spans(text: str) -> list[tuple[int, int]]:
     """
     Collect spans of HTML elements to be removed.
-    
+
     Args:
         text: Text to analyze
-        
+
     Returns:
         List of (start, end) spans to remove
     """
@@ -227,16 +275,16 @@ def _collect_html_spans(text: str) -> list[tuple[int, int]]:
 def _drop_discarded_elements(text: str) -> str:
     """
     Drop discarded HTML elements from text.
-    
+
     Args:
         text: Text to process
-        
+
     Returns:
         Text with discarded elements removed
     """
 
     for tag in DISCARD_ELEMENTS:
-        text = drop_nested(text, r'<\s*%s\b[^>/]*>' % tag, r'<\s*/\s*%s>' % tag)
+        text = drop_nested(text, r"<\s*%s\b[^>/]*>" % tag, r"<\s*/\s*%s>" % tag)
 
     return text
 
@@ -253,7 +301,7 @@ def _drop_spans(spans: list[tuple[int, int]], text: str) -> str:
         Text with spans removed
     """
     spans.sort()
-    result: str = ''
+    result: str = ""
     offset: int = 0
     for start, end in spans:
         if offset <= start:  # Handle nesting
@@ -268,17 +316,17 @@ def _drop_spans(spans: list[tuple[int, int]], text: str) -> str:
 def _expand_placeholders(text: str) -> str:
     """
     Expand placeholder tags in text.
-    
+
     Args:
         text: Text to process
-        
+
     Returns:
         Text with placeholders expanded
     """
     for pattern, placeholder in PLACEHOLDER_TAG_PATTERNS:
         index: int = 1
         for match in pattern.finditer(text):
-            text = text.replace(match.group(), '%s_%d' % (placeholder, index))
+            text = text.replace(match.group(), "%s_%d" % (placeholder, index))
             index += 1
 
     return text
@@ -287,11 +335,11 @@ def _expand_placeholders(text: str) -> str:
 def clean_html_elements(text: str, html_formatting: bool = False) -> str:
     """
     Process all HTML elements in text.
-    
+
     Args:
         text: Text to process
         html_formatting: Whether to preserve HTML formatting
-        
+
     Returns:
         Processed text
     """
@@ -318,7 +366,7 @@ def clean_html_elements(text: str, html_formatting: bool = False) -> str:
     text = _expand_placeholders(text)
 
     # Replace angle brackets
-    text = text.replace('<<', u'«').replace('>>', u'»')
+    text = text.replace("<<", "«").replace(">>", "»")
 
     return text
 
@@ -326,15 +374,15 @@ def clean_html_elements(text: str, html_formatting: bool = False) -> str:
 def clean_html_entities(text: str) -> str:
     """
     Clean up HTML entities in text.
-    
+
     Args:
         text: Text to clean
-        
+
     Returns:
         Text with HTML entities cleaned
     """
-    text = text.replace('&lt;', '<')
-    text = text.replace('&gt;', '>')
-    text = text.replace('&amp;', '&')
+    text = text.replace("&lt;", "<")
+    text = text.replace("&gt;", ">")
+    text = text.replace("&amp;", "&")
 
     return text

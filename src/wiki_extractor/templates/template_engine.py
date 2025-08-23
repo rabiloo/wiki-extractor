@@ -20,8 +20,8 @@ def find_matching_braces(text, num_braces):
     Returns:
         List of (start, end) positions of matching braces
     """
-    open_delim = '{' * num_braces
-    close_delim = '}' * num_braces
+    open_delim = "{" * num_braces
+    close_delim = "}" * num_braces
 
     spans = []
     stack = []
@@ -53,40 +53,40 @@ def split_parts(text):
         List of parameter parts
     """
     parts = []
-    current = ''
+    current = ""
     depth = 0
 
     i = 0
     while i < len(text):
         char = text[i]
 
-        if char == '{':
-            if i + 1 < len(text) and text[i + 1] == '{':
+        if char == "{":
+            if i + 1 < len(text) and text[i + 1] == "{":
                 depth += 1
-                current += '{{'
+                current += "{{"
                 i += 2
                 continue
-        elif char == '}':
-            if i + 1 < len(text) and text[i + 1] == '}':
+        elif char == "}":
+            if i + 1 < len(text) and text[i + 1] == "}":
                 depth -= 1
-                current += '}}'
+                current += "}}"
                 i += 2
                 continue
-        elif char == '[':
-            if i + 1 < len(text) and text[i + 1] == '[':
+        elif char == "[":
+            if i + 1 < len(text) and text[i + 1] == "[":
                 depth += 1
-                current += '[['
+                current += "[["
                 i += 2
                 continue
-        elif char == ']':
-            if i + 1 < len(text) and text[i + 1] == ']':
+        elif char == "]":
+            if i + 1 < len(text) and text[i + 1] == "]":
                 depth -= 1
-                current += ']]'
+                current += "]]"
                 i += 2
                 continue
-        elif char == '|' and depth == 0:
+        elif char == "|" and depth == 0:
             parts.append(current)
-            current = ''
+            current = ""
             i += 1
             continue
 
@@ -108,10 +108,10 @@ class Template(list):
     def parse(cls, body):
         """
         Parse template body into Template object.
-        
+
         Args:
             body: Template body text
-            
+
         Returns:
             Template object
         """
@@ -124,7 +124,7 @@ class Template(list):
         start = 0
         for s, e in find_matching_braces(body, 3):
             tpl.append(TemplateText(body[start:s]))
-            tpl.append(TemplateArg(body[s + 3:e - 3]))
+            tpl.append(TemplateArg(body[s + 3 : e - 3]))
             start = e
         tpl.append(TemplateText(body[start:]))  # leftover
         return tpl
@@ -132,12 +132,12 @@ class Template(list):
     def subst(self, params, extractor, depth=0):
         """
         Substitute parameters in template.
-        
+
         Args:
             params: Parameter dictionary
             extractor: Extractor instance
             depth: Recursion depth
-            
+
         Returns:
             Substituted template text
         """
@@ -145,17 +145,17 @@ class Template(list):
         # We also limit the maximum number of iterations to avoid too long or
         # even endless loops (in case of malformed input).
 
-        logging.debug('subst tpl (%d, %d) %s', len(extractor.frame), depth, self)
+        logging.debug("subst tpl (%d, %d) %s", len(extractor.frame), depth, self)
 
         if depth > MAX_PARAMETER_RECURSION_LEVELS:
             extractor.recursion_exceeded_3_errs += 1
-            return ''
+            return ""
 
-        return ''.join([tpl.subst(params, extractor, depth) for tpl in self])
+        return "".join([tpl.subst(params, extractor, depth) for tpl in self])
 
     def __str__(self):
         """String representation of template."""
-        return ''.join([str(x) for x in self if x is not None])
+        return "".join([str(x) for x in self if x is not None])
 
 
 class TemplateText(str):
@@ -164,12 +164,12 @@ class TemplateText(str):
     def subst(self, params, extractor, depth):
         """
         Substitute parameters (no-op for fixed text).
-        
+
         Args:
             params: Parameter dictionary
             extractor: Extractor instance
             depth: Recursion depth
-            
+
         Returns:
             The text itself (unchanged)
         """
@@ -185,7 +185,7 @@ class TemplateArg:
     def __init__(self, parameter):
         """
         Initialize template argument.
-        
+
         Args:
             parameter: The parts of a template argument
         """
@@ -207,19 +207,19 @@ class TemplateArg:
     def __str__(self):
         """String representation of template argument."""
         if self.default:
-            return '{{{%s|%s}}}' % (self.name, self.default)
+            return "{{{%s|%s}}}" % (self.name, self.default)
         else:
-            return '{{{%s}}}' % self.name
+            return "{{{%s}}}" % self.name
 
     def subst(self, params, extractor, depth):
         """
         Substitute value for this argument from parameter dictionary.
-        
+
         Args:
             params: Parameter dictionary
             extractor: Extractor instance for evaluation
             depth: Recursion depth limit
-            
+
         Returns:
             Substituted value
         """
@@ -228,14 +228,14 @@ class TemplateArg:
         param_name = self.name.subst(params, extractor, depth + 1)
         param_name = extractor.expandTemplates(param_name)
 
-        result = ''
+        result = ""
         if param_name in params:
             result = params[param_name]  # use parameter value specified in template invocation
         elif self.default:  # use the default value
             default_value = self.default.subst(params, extractor, depth + 1)
             result = extractor.expandTemplates(default_value)
             if result is None:
-                return ''
+                return ""
 
         return result
 
@@ -243,10 +243,10 @@ class TemplateArg:
 def parse_template_parameters(parameters):
     """
     Build a dictionary with positional or named keys to expanded parameters.
-    
+
     Args:
         parameters: The parts[1:] of a template, i.e. all except the title
-        
+
     Returns:
         Dictionary of template parameters
     """
@@ -296,16 +296,16 @@ def parse_template_parameters(parameters):
             parameter_name = m.group(1).strip()
             parameter_value = m.group(2)
 
-            if ']]' not in parameter_value:  # if the value does not contain a link, trim whitespace
+            if "]]" not in parameter_value:  # if the value does not contain a link, trim whitespace
                 parameter_value = parameter_value.strip()
             template_params[parameter_name] = parameter_value
         else:
             # This is an unnamed parameter
             unnamed_parameter_counter += 1
 
-            if ']]' not in param:  # if the value does not contain a link, trim whitespace
+            if "]]" not in param:  # if the value does not contain a link, trim whitespace
                 param = param.strip()
             template_params[str(unnamed_parameter_counter)] = param
 
-    logging.debug('   templateParams> %s', '|'.join(template_params.values()))
+    logging.debug("   templateParams> %s", "|".join(template_params.values()))
     return template_params

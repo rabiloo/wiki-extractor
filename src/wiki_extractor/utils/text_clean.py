@@ -15,23 +15,23 @@ from .template_clean import convert_template_to_markdown, parse_template_content
 
 # Magic words patterns
 MAGIC_WORDS_SWITCHES: tuple[str, ...] = (
-    '__NOTOC__',
-    '__FORCETOC__',
-    '__TOC__',
-    '__NEWSECTIONLINK__',
-    '__NONEWSECTIONLINK__',
-    '__NOGALLERY__',
-    '__HIDDENCAT__',
-    '__NOCONTENTCONVERT__',
-    '__NOCC__',
-    '__NOTITLECONVERT__',
-    '__NOTC__',
-    '__START__',
-    '__END__',
-    '__INDEX__',
-    '__NOINDEX__',
-    '__STATICREDIRECT__',
-    '__DISAMBIG__'
+    "__NOTOC__",
+    "__FORCETOC__",
+    "__TOC__",
+    "__NEWSECTIONLINK__",
+    "__NONEWSECTIONLINK__",
+    "__NOGALLERY__",
+    "__HIDDENCAT__",
+    "__NOCONTENTCONVERT__",
+    "__NOCC__",
+    "__NOTITLECONVERT__",
+    "__NOTC__",
+    "__START__",
+    "__END__",
+    "__INDEX__",
+    "__NOINDEX__",
+    "__STATICREDIRECT__",
+    "__DISAMBIG__",
 )
 
 MAGIC_WORDS_COMPILED_PATTERN: re.Pattern[str] = re.compile("|".join(MAGIC_WORDS_SWITCHES))
@@ -186,23 +186,23 @@ def _cleanup_text(text: str, html_safe: bool = True) -> str:
         Cleaned text
     """
     # Replace tabs with spaces
-    text = text.replace('\t', ' ')
+    text = text.replace("\t", " ")
 
     # Normalize spaces
-    text = SPACES_COMPILED_PATTERN.sub(' ', text)
+    text = SPACES_COMPILED_PATTERN.sub(" ", text)
 
     # Normalize dots
-    text = DOTS_COMPILED_PATTERN.sub('...', text)
+    text = DOTS_COMPILED_PATTERN.sub("...", text)
 
     # Fix punctuation spacing
-    text = re.sub(u' (,:\.\)\]»)', r'\1', text)
-    text = re.sub(u'(\[\(«) ', r'\1', text)
+    text = re.sub(" (,:\.\)\]»)", r"\1", text)
+    text = re.sub("(\[\(«) ", r"\1", text)
 
     # Remove lines with only punctuation
-    text = re.sub(r'\n\W+?\n', '\n', text, flags=re.U)
+    text = re.sub(r"\n\W+?\n", "\n", text, flags=re.U)
 
     # Fix comma and period combinations
-    text = text.replace(',,', ',').replace(',.', '.')
+    text = text.replace(",,", ",").replace(",.", ".")
 
     if html_safe:
         text = html.escape(text, quote=False)

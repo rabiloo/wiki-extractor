@@ -1,6 +1,6 @@
 """Setup script for WikiExtractor package."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="wiki-extractor",
@@ -30,10 +30,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     python_requires=">=3.6",
-    install_requires=[
-        "beautifulsoup4>=4.9.0",
-        "requests>=2.25.0"
-    ],
+    install_requires=["beautifulsoup4>=4.9.0", "requests>=2.25.0"],
     extras_require={
         "dev": [
             "pytest>=6.0.0",

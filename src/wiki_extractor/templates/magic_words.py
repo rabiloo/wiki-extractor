@@ -6,106 +6,106 @@ Handles magic words and behavioral switches
 import re
 
 MAGIC_WORDS_NAMES = [
-    '!',
-    'currentmonth',
-    'currentmonth1',
-    'currentmonthname',
-    'currentmonthnamegen',
-    'currentmonthabbrev',
-    'currentday',
-    'currentday2',
-    'currentdayname',
-    'currentyear',
-    'currenttime',
-    'currenthour',
-    'localmonth',
-    'localmonth1',
-    'localmonthname',
-    'localmonthnamegen',
-    'localmonthabbrev',
-    'localday',
-    'localday2',
-    'localdayname',
-    'localyear',
-    'localtime',
-    'localhour',
-    'numberofarticles',
-    'numberoffiles',
-    'numberofedits',
-    'articlepath',
-    'pageid',
-    'sitename',
-    'server',
-    'servername',
-    'scriptpath',
-    'stylepath',
-    'pagename',
-    'pagenamee',
-    'fullpagename',
-    'fullpagenamee',
-    'namespace',
-    'namespacee',
-    'namespacenumber',
-    'currentweek',
-    'currentdow',
-    'localweek',
-    'localdow',
-    'revisionid',
-    'revisionday',
-    'revisionday2',
-    'revisionmonth',
-    'revisionmonth1',
-    'revisionyear',
-    'revisiontimestamp',
-    'revisionuser',
-    'revisionsize',
-    'subpagename',
-    'subpagenamee',
-    'talkspace',
-    'talkspacee',
-    'subjectspace',
-    'subjectspacee',
-    'talkpagename',
-    'talkpagenamee',
-    'subjectpagename',
-    'subjectpagenamee',
-    'numberofusers',
-    'numberofactiveusers',
-    'numberofpages',
-    'currentversion',
-    'rootpagename',
-    'rootpagenamee',
-    'basepagename',
-    'basepagenamee',
-    'currenttimestamp',
-    'localtimestamp',
-    'directionmark',
-    'contentlanguage',
-    'numberofadmins',
-    'cascadingsources',
+    "!",
+    "currentmonth",
+    "currentmonth1",
+    "currentmonthname",
+    "currentmonthnamegen",
+    "currentmonthabbrev",
+    "currentday",
+    "currentday2",
+    "currentdayname",
+    "currentyear",
+    "currenttime",
+    "currenthour",
+    "localmonth",
+    "localmonth1",
+    "localmonthname",
+    "localmonthnamegen",
+    "localmonthabbrev",
+    "localday",
+    "localday2",
+    "localdayname",
+    "localyear",
+    "localtime",
+    "localhour",
+    "numberofarticles",
+    "numberoffiles",
+    "numberofedits",
+    "articlepath",
+    "pageid",
+    "sitename",
+    "server",
+    "servername",
+    "scriptpath",
+    "stylepath",
+    "pagename",
+    "pagenamee",
+    "fullpagename",
+    "fullpagenamee",
+    "namespace",
+    "namespacee",
+    "namespacenumber",
+    "currentweek",
+    "currentdow",
+    "localweek",
+    "localdow",
+    "revisionid",
+    "revisionday",
+    "revisionday2",
+    "revisionmonth",
+    "revisionmonth1",
+    "revisionyear",
+    "revisiontimestamp",
+    "revisionuser",
+    "revisionsize",
+    "subpagename",
+    "subpagenamee",
+    "talkspace",
+    "talkspacee",
+    "subjectspace",
+    "subjectspacee",
+    "talkpagename",
+    "talkpagenamee",
+    "subjectpagename",
+    "subjectpagenamee",
+    "numberofusers",
+    "numberofactiveusers",
+    "numberofpages",
+    "currentversion",
+    "rootpagename",
+    "rootpagenamee",
+    "basepagename",
+    "basepagenamee",
+    "currenttimestamp",
+    "localtimestamp",
+    "directionmark",
+    "contentlanguage",
+    "numberofadmins",
+    "cascadingsources",
 ]
 
 MAGIC_WORDS_SWITCHES = (
-    '__NOTOC__',
-    '__FORCETOC__',
-    '__TOC__',
-    '__NEWSECTIONLINK__',
-    '__NONEWSECTIONLINK__',
-    '__NOGALLERY__',
-    '__HIDDENCAT__',
-    '__NOCONTENTCONVERT__',
-    '__NOCC__',
-    '__NOTITLECONVERT__',
-    '__NOTC__',
-    '__START__',
-    '__END__',
-    '__INDEX__',
-    '__NOINDEX__',
-    '__STATICREDIRECT__',
-    '__DISAMBIG__'
+    "__NOTOC__",
+    "__FORCETOC__",
+    "__TOC__",
+    "__NEWSECTIONLINK__",
+    "__NONEWSECTIONLINK__",
+    "__NOGALLERY__",
+    "__HIDDENCAT__",
+    "__NOCONTENTCONVERT__",
+    "__NOCC__",
+    "__NOTITLECONVERT__",
+    "__NOTC__",
+    "__START__",
+    "__END__",
+    "__INDEX__",
+    "__NOINDEX__",
+    "__STATICREDIRECT__",
+    "__DISAMBIG__",
 )
 # Compiled regex for magic word switches
-MAGIC_WORDS_COMPILED_PATTERN = re.compile('|'.join(MAGIC_WORDS_SWITCHES))
+MAGIC_WORDS_COMPILED_PATTERN = re.compile("|".join(MAGIC_WORDS_SWITCHES))
 
 
 class MagicWords:
@@ -118,7 +118,7 @@ class MagicWords:
 
     def __init__(self):
         """Initialize magic words with default values."""
-        self.values = {'!': '|'}
+        self.values = {"!": "|"}
 
     def __getitem__(self, name):
         """Get magic word value."""
@@ -140,11 +140,11 @@ class MagicWords:
 def substitute_magic_words(text, magic_words):
     """
     Substitute magic words in text.
-    
+
     Args:
         text: Text containing magic words
         magic_words: MagicWords instance
-        
+
     Returns:
         Text with magic words substituted
     """
@@ -154,7 +154,7 @@ def substitute_magic_words(text, magic_words):
         value = magic_words.get(name)
         if value is not None:
             # Simple substitution - in reality this would be more complex
-            text = text.replace('{{' + name + '}}', str(value))
+            text = text.replace("{{" + name + "}}", str(value))
 
     return text
 
@@ -162,11 +162,11 @@ def substitute_magic_words(text, magic_words):
 def remove_magic_word_switches(text):
     """
     Remove magic word behavioral switches from text.
-    
+
     Args:
         text: Text containing magic word switches
-        
+
     Returns:
         Text with switches removed
     """
-    return MAGIC_WORDS_COMPILED_PATTERN.sub('', text)
+    return MAGIC_WORDS_COMPILED_PATTERN.sub("", text)

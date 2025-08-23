@@ -12,13 +12,13 @@ import requests
 from .utils.text_clean import clean_text
 
 # File separator for output
-FILE_SEPARATOR: str = '\n'
-SECTION_RE: re.Pattern[str] = re.compile(r'(==+)\s*(.*?)\s*\1')
+FILE_SEPARATOR: str = "\n"
+SECTION_RE: re.Pattern[str] = re.compile(r"(==+)\s*(.*?)\s*\1")
 
 # List formatting for HTML output
-LIST_OPEN: dict[str, str] = {'*': '<ul>', '#': '<ol>', ';': '<dl>', ':': '<dl>'}
-LIST_CLOSE: dict[str, str] = {'*': '</ul>', '#': '</ol>', ';': '</dl>', ':': '</dl>'}
-LIST_ITEM: dict[str, str] = {'*': '<li>%s</li>', '#': '<li>%s</<li>', ';': '<dt>%s</dt>', ':': '<dd>%s</dd>'}
+LIST_OPEN: dict[str, str] = {"*": "<ul>", "#": "<ol>", ";": "<dl>", ":": "<dl>"}
+LIST_CLOSE: dict[str, str] = {"*": "</ul>", "#": "</ol>", ";": "</dl>", ":": "</dl>"}
+LIST_ITEM: dict[str, str] = {"*": "<li>%s</li>", "#": "<li>%s</<li>", ";": "<dt>%s</dt>", ":": "<dd>%s</dd>"}
 LIST_ITEM_RE = re.compile(r"^([*#:;]+)\s*(.*)$")
 
 logger = logging.getLogger(__name__)
@@ -27,17 +27,17 @@ logger = logging.getLogger(__name__)
 def get_wikipedia_raw_content(url: str) -> tuple[str, str | None]:
     """Fetch Wikipedia content from URL."""
     # Extract title from URL
-    title: str = url.split('/wiki/')[-1].replace('_', ' ')
+    title: str = url.split("/wiki/")[-1].replace("_", " ")
 
     # Get page content via API
     api_url: str = "https://en.wikipedia.org/w/api.php"
     params: dict[str, str] = {
-        'action': 'query',
-        'format': 'json',
-        'titles': title,
-        'prop': 'revisions',
-        'rvprop': 'content',
-        'rvslots': 'main'
+        "action": "query",
+        "format": "json",
+        "titles": title,
+        "prop": "revisions",
+        "rvprop": "content",
+        "rvslots": "main",
     }
 
     try:
@@ -47,9 +47,9 @@ def get_wikipedia_raw_content(url: str) -> tuple[str, str | None]:
             return title, None
 
         data: dict[str, Any] = response.json()
-        pages: dict[str, Any] = data['query']['pages']
+        pages: dict[str, Any] = data["query"]["pages"]
         page_id: str = list(pages.keys())[0]
-        content: str = pages[page_id]['revisions'][0]['slots']['main']['*']
+        content: str = pages[page_id]["revisions"][0]["slots"]["main"]["*"]
 
         return title, content
     except requests.RequestException as e:
@@ -61,6 +61,7 @@ class Extractor:
     """
     An extraction task on an article.
     """
+
     # Type hints for instance variables
     # template_processor: TemplateProcessor
     discard_sections: set[str]

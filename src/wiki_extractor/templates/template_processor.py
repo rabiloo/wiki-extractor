@@ -17,30 +17,30 @@ from .template_engine import Template, find_matching_braces, parse_template_para
 # Templates not to expand (regex patterns)
 NOT_EXPAND_TEMPLATES_PATTERNS = [
     """'""",  # Triple quotes from original
-    r'^\s+$',  # White spaces
-    '!',
-    'ISBN',
-    'notelist',
-    'rp',
-    'MF',
-    'Pie chart',
-    'Graph',
-    r'(.*)Infobox(.*)',  # Too complicated to parse
-    r'(.*)Infotable(.*)',
-    r'(.*)Image(.*)',
-    'Flag',
-    'pdf',
-    'increase',
-    'decrease',
-    'color',
+    r"^\s+$",  # White spaces
+    "!",
+    "ISBN",
+    "notelist",
+    "rp",
+    "MF",
+    "Pie chart",
+    "Graph",
+    r"(.*)Infobox(.*)",  # Too complicated to parse
+    r"(.*)Infotable(.*)",
+    r"(.*)Image(.*)",
+    "Flag",
+    "pdf",
+    "increase",
+    "decrease",
+    "color",
 ]
 
 # Compile regex for not expand templates
-NOT_EXPAND_TEMPLATES_RE = re.compile('|'.join(NOT_EXPAND_TEMPLATES_PATTERNS), re.IGNORECASE)
+NOT_EXPAND_TEMPLATES_RE = re.compile("|".join(NOT_EXPAND_TEMPLATES_PATTERNS), re.IGNORECASE)
 # Template recursion limits
 MAX_TEMPLATE_RECURSION_LEVELS = 30
 
-SUBST_WORDS = 'subst:|safesubst:'
+SUBST_WORDS = "subst:|safesubst:"
 AUX_TEMPLATE_COORD_AUX_VAR = ["""º""", """'""", """''"""]
 
 
@@ -54,21 +54,20 @@ def balance_brackets(string):
 
     # Iterate over each character in the input string
     for c in string:
-        if c == '{':
+        if c == "{":
             stack.append(c)
-        elif c == '}':
+        elif c == "}":
             # If there's a matching opening bracket, remove it
-            if len(stack) > 0 and stack[-1] == '{':
+            if len(stack) > 0 and stack[-1] == "{":
                 stack.pop()
             else:
                 stack.append(c)
 
     # Balance the string by adding missing brackets
-    return '{' * stack.count('}') + string + '}' * stack.count('{')
+    return "{" * stack.count("}") + string + "}" * stack.count("{")
 
 
 class TemplateProcessor:
-
     def __init__(self, title: str, ignore_templates: set = {}, discard_templates: set = {}):
         """
         Initialize template processor.
@@ -88,31 +87,31 @@ class TemplateProcessor:
 
     def _setup_magic_words(self, title: str):
         """Set up magic words for the current article."""
-        self.magic_words['namespace'] = title[:max(0, title.find(":"))]
-        self.magic_words['pagename'] = title
-        self.magic_words['fullpagename'] = title
-        self.magic_words['currentyear'] = time.strftime('%Y')
-        self.magic_words['currentmonth'] = time.strftime('%m')
-        self.magic_words['currentday'] = time.strftime('%d')
-        self.magic_words['currenthour'] = time.strftime('%H')
-        self.magic_words['currenttime'] = time.strftime('%H:%M:%S')
+        self.magic_words["namespace"] = title[: max(0, title.find(":"))]
+        self.magic_words["pagename"] = title
+        self.magic_words["fullpagename"] = title
+        self.magic_words["currentyear"] = time.strftime("%Y")
+        self.magic_words["currentmonth"] = time.strftime("%m")
+        self.magic_words["currentday"] = time.strftime("%d")
+        self.magic_words["currenthour"] = time.strftime("%H")
+        self.magic_words["currenttime"] = time.strftime("%H:%M:%S")
 
     def expand_template(self, body, language=None):
         """
         Expand template invocation.
-        
+
         Args:
             body: The parts of a template
             language: Language code
-            
+
         Returns:
             Expanded template content or None if template should be discarded
         """
         if len(self.frame) >= MAX_TEMPLATE_RECURSION_LEVELS:
             self.recursion_exceeded_2_errs += 1
-            return ''
+            return ""
 
-        logging.debug('INVOCATION %d %s', len(self.frame), body)
+        logging.debug("INVOCATION %d %s", len(self.frame), body)
 
         parts = split_parts(body)
         title = self.expand_templates(parts[0].strip())
@@ -122,103 +121,100 @@ class TemplateProcessor:
             return None
         elif re.match(NOT_EXPAND_TEMPLATES_RE, title):
             # Don't expand certain templates
-            return ''
+            return ""
         elif title.lower() in self.ignore_templates:
             # Not expanding manually specified templates
-            return ''
+            return ""
         elif title.lower() in self.discard_templates:
             # This whole doc is gonna be discarded
             return None
 
         # Handle language templates
-        elif re.match('lang\-+', title, re.IGNORECASE):
+        elif re.match("lang\-+", title, re.IGNORECASE):
             if language:
                 try:
-                    iso_code = parts[0].split('-')[1]
+                    iso_code = parts[0].split("-")[1]
                     transl_lang_name = babel.Locale.parse(iso_code).get_display_name(language)
-                    final_parse = transl_lang_name + ':' + str(parts[1])
+                    final_parse = transl_lang_name + ":" + str(parts[1])
                     return final_parse
                 except babel.core.UnknownLocaleError:
                     # Some locale langauages might not work. E.g. "grc" or "an"
                     if len(parts) >= 2:
-                        logging.debug('Lang. Template not found: ' + str(parts[1]))
+                        logging.debug("Lang. Template not found: " + str(parts[1]))
                         return str(parts[1])
                     else:
-                        logging.debug('Lang. Template not found and not language detected in template name: ' + title)
-                        return ''
+                        logging.debug("Lang. Template not found and not language detected in template name: " + title)
+                        return ""
                 except Exception:
                     if len(parts) >= 2:
                         return str(parts[1])
                     else:
-                        return ''
+                        return ""
 
             else:  # (This should never be the case), but code shuold not break...
-                return ''
+                return ""
 
-
-        elif re.match('lang', title, re.IGNORECASE):
+        elif re.match("lang", title, re.IGNORECASE):
             if len(parts) < 3:  # xml format error
                 # raise Exception('LANG not well formated parts is bad:' + str(parts))
-                return ''
+                return ""
             else:
                 return str(parts[2])
-        elif re.match('IPA', title, re.IGNORECASE):  # IPA  templates
+        elif re.match("IPA", title, re.IGNORECASE):  # IPA  templates
             if len(parts) < 2:
                 # xml format error
-                return ''
+                return ""
             else:
                 return str(parts[1])
             # elif(re.match('notelist',title,re.IGNORECASE) ):
             #    # problems with list and inner references
             #    return ''
-        elif re.match('segle', title, re.IGNORECASE):
-
+        elif re.match("segle", title, re.IGNORECASE):
             if len(parts) < 2:
-                return ''
+                return ""
             else:
-                segle_tpl = '{{uc:' + str(parts[1]) + '}}'
+                segle_tpl = "{{uc:" + str(parts[1]) + "}}"
                 segle = self.expand_templates(segle_tpl)
                 if segle is None:
                     return None
 
             if len(parts) == 2:
-                return 'segle ' + str(segle)
+                return "segle " + str(segle)
 
             elif len(parts) >= 3:
-                if parts[2] == '-':
-                    return 'segle ' + str(segle) + ' aC'
+                if parts[2] == "-":
+                    return "segle " + str(segle) + " aC"
                 else:
-                    return 'segle ' + str(segle)
+                    return "segle " + str(segle)
             else:
-                return ''
-        elif re.match('coord', title, re.IGNORECASE):
-
+                return ""
+        elif re.match("coord", title, re.IGNORECASE):
             if len(parts) == 3:
-                return parts[1] + 'ºN, ' + parts[2] + ' ºW'
+                return parts[1] + "ºN, " + parts[2] + " ºW"
 
             else:
                 coord_1 = []
                 coord_2 = []
-                coord_1_dir = ''
-                coord_2_dir = ''
+                coord_1_dir = ""
+                coord_2_dir = ""
                 coord_1_completed = False
 
                 for e in parts[1:]:
-                    if re.match('N', e, re.IGNORECASE) or re.match('S', e, re.IGNORECASE):
+                    if re.match("N", e, re.IGNORECASE) or re.match("S", e, re.IGNORECASE):
                         coord_1_dir = e
                         coord_1_completed = True
                     elif not coord_1_completed:
                         coord_1.append(e)
-                    elif re.match('W', e, re.IGNORECASE) or re.match('E', e, re.IGNORECASE):
+                    elif re.match("W", e, re.IGNORECASE) or re.match("E", e, re.IGNORECASE):
                         coord_2_dir = e
                         break
-                    elif not re.match(r'\w*(=|:)\w*', e, re.IGNORECASE):  # other args
+                    elif not re.match(r"\w*(=|:)\w*", e, re.IGNORECASE):  # other args
                         coord_2.append(e)
                     else:
                         break
 
-                final_coord_1 = ''
-                final_coord_2 = ''
+                final_coord_1 = ""
+                final_coord_2 = ""
                 if any(coord_1) and len(coord_1) == len(coord_2):
                     for i, e in enumerate(coord_1):
                         if i > (len(AUX_TEMPLATE_COORD_AUX_VAR) - 1):
@@ -227,15 +223,15 @@ class TemplateProcessor:
                         final_coord_2 += str(coord_2[i]) + AUX_TEMPLATE_COORD_AUX_VAR[i]
                     final_coord_1 += coord_1_dir
                     final_coord_2 += coord_2_dir
-                    return final_coord_1 + ', ' + final_coord_2
+                    return final_coord_1 + ", " + final_coord_2
                 else:
-                    return ''
+                    return ""
 
-        elif re.match('audio', title, re.IGNORECASE):
+        elif re.match("audio", title, re.IGNORECASE):
             if len(parts) == 3:
                 return parts[2]
             else:
-                return ''
+                return ""
 
         # SUBST
         # Apply the template tag to parameters without
@@ -244,7 +240,7 @@ class TemplateProcessor:
         # @see https://www.mediawiki.org/wiki/Manual:Substitution#Partial_substitution
         subst = False
         if re.match(SUBST_WORDS, title, re.IGNORECASE):
-            title = re.sub(SUBST_WORDS, '', title, 1, re.IGNORECASE)
+            title = re.sub(SUBST_WORDS, "", title, 1, re.IGNORECASE)
             subst = True
 
         if title.lower() in self.magic_words.values:
@@ -253,10 +249,10 @@ class TemplateProcessor:
         # Parser functions
         # The first argument is everything after the first colon.
         # It has been evaluated above.
-        colon = title.find(':')
+        colon = title.find(":")
         if colon > 1:
             funct = title[:colon]
-            parts[0] = title[colon + 1:].strip()  # side-effect (parts[0] not used later)
+            parts[0] = title[colon + 1 :].strip()  # side-effect (parts[0] not used later)
             # arguments after first are not evaluated
             # ret = callParserFunction(funct, parts, self.frame)
             # return self.expandTemplates(ret)
@@ -264,7 +260,7 @@ class TemplateProcessor:
             ret = call_parser_function(funct, parts, self.frame)
             call_result = self.expand_templates(ret)
             if call_result is None:
-                return ''
+                return ""
             else:
                 return call_result
             # return
@@ -272,7 +268,7 @@ class TemplateProcessor:
         title = fully_qualified_template_title(title)
         if not title:
             self.template_title_errs += 1
-            return ''
+            return ""
 
         redirected = self.redirects.get(title)
         if redirected:
@@ -288,7 +284,7 @@ class TemplateProcessor:
             del self.templates[title]
         else:
             # The page being included could not be identified
-            return ''
+            return ""
 
         # logging.debug('TEMPLATE %s: %s', title, template)
 
@@ -342,14 +338,14 @@ class TemplateProcessor:
 
         # Sometimes this generates html code with templates inside
         try:
-            instantiated_html_clean = BeautifulSoup(instantiated, 'html.parser').get_text()
+            instantiated_html_clean = BeautifulSoup(instantiated, "html.parser").get_text()
         except Exception as e:
             instantiated_html_clean = instantiated
 
         value = self.expand_templates(instantiated_html_clean)
         if value is None:
             # self.frame.pop()
-            return ''
+            return ""
         # value = self.expandTemplates(instantiated)
 
         # sometimes value has unbalances brackets
@@ -384,7 +380,7 @@ class TemplateProcessor:
         # article. Therefore, we limit the number of iterations of nested
         # template inclusion.
 
-        result = ''
+        result = ""
         if len(self.frame) >= MAX_TEMPLATE_RECURSION_LEVELS:
             self.recursion_exceeded_1_errs += 1
             return None
@@ -392,7 +388,7 @@ class TemplateProcessor:
         cur = 0
         # Look for matching {{...}}
         for s, e in find_matching_braces(wikitext, 2):
-            content = self.expand_template(wikitext[s + 2:e - 2], language)
+            content = self.expand_template(wikitext[s + 2 : e - 2], language)
             if content is None:
                 # This happens when a template specified in
                 # config/discard_templates.txt appears. The whole doc will be discarded.
@@ -408,10 +404,10 @@ class TemplateProcessor:
     def template_params(self, parameters):
         """
         Build a dictionary with positional or name key to expanded parameters.
-        
+
         Args:
             parameters: The parts[1:] of a template, i.e. all except the title
-            
+
         Returns:
             Dictionary of template parameters
         """

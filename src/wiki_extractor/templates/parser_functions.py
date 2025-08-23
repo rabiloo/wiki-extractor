@@ -6,14 +6,14 @@ def ucfirst(string: str) -> str:
     """Capitalize the first character of a string."""
     if string:
         return string[0].upper() + string[1:] if len(string) > 1 else string.upper()
-    return ''
+    return ""
 
 
 def lcfirst(string: str) -> str:
     """Lowercase the first character of a string."""
     if string:
         return string[0].lower() + string[1:] if len(string) > 1 else string.lower()
-    return ''
+    return ""
 
 
 def normalize_namespace(ns: str) -> str:
@@ -21,25 +21,25 @@ def normalize_namespace(ns: str) -> str:
     return ucfirst(ns)
 
 
-def fully_qualified_template_title(template_title: str, template_prefix: str = '') -> str:
+def fully_qualified_template_title(template_title: str, template_prefix: str = "") -> str:
     """Determine the namespace of a template title."""
-    if template_title.startswith(':'):
+    if template_title.startswith(":"):
         return ucfirst(template_title[1:])
-    match = re.match(r'([^:]*)(:.*)', template_title)
+    match = re.match(r"([^:]*)(:.*)", template_title)
     if match:
         prefix = normalize_namespace(match.group(1))
-        if prefix in {'Template'}:
+        if prefix in {"Template"}:
             return f"{prefix}{ucfirst(match.group(2))}"
-    return f"{template_prefix}{ucfirst(template_title)}" if template_title else ''
+    return f"{template_prefix}{ucfirst(template_title)}" if template_title else ""
 
 
 def sharp_expr(expr: str) -> str:
     """Evaluate a mathematical expression."""
     try:
-        expr = re.sub(r'=', '==', expr)
-        expr = re.sub(r'mod', '%', expr)
-        expr = re.sub(r'\bdiv\b', '/', expr)
-        expr = re.sub(r'\bround\b', '|ROUND|', expr)
+        expr = re.sub(r"=", "==", expr)
+        expr = re.sub(r"mod", "%", expr)
+        expr = re.sub(r"\bdiv\b", "/", expr)
+        expr = re.sub(r"\bround\b", "|ROUND|", expr)
         return str(eval(expr))
     except Exception:
         return '<span class="error"></span>'
@@ -67,7 +67,7 @@ def sharp_ifeq(lvalue: str, rvalue: str, value_if_true: str, value_if_false: str
     return ""
 
 
-def sharp_iferror(test: str, then: str = '', else_val: str = None, *args) -> str:
+def sharp_iferror(test: str, then: str = "", else_val: str = None, *args) -> str:
     """Implement #iferror parser function."""
     if re.match(r'<(?:strong|span|p|div)\s(?:[^\s>]*\s+)*?class="(?:[^"\s>]*\s+)*?error(?:\s[^">]*)?"', test):
         return then
@@ -80,17 +80,17 @@ def sharp_switch(primary: str, *params) -> str:
     found = False
     default = None
     rvalue = None
-    lvalue = ''
+    lvalue = ""
     for param in params:
-        pair = param.split('=', 1)
+        pair = param.split("=", 1)
         lvalue = pair[0].strip()
         rvalue = pair[1].strip() if len(pair) > 1 else None
-        if found or primary in [v.strip() for v in lvalue.split('|')]:
+        if found or primary in [v.strip() for v in lvalue.split("|")]:
             return rvalue
-        if lvalue == '#default':
+        if lvalue == "#default":
             default = rvalue
         rvalue = None
-    return lvalue if rvalue is not None else default or ''
+    return lvalue if rvalue is not None else default or ""
 
 
 # def sharp_invoke(module: str, function: str, frame: list) -> str:
@@ -110,25 +110,25 @@ def sharp_switch(primary: str, *params) -> str:
 def call_parser_function(function_name: str, args: list, frame: list) -> str:
     """Call a parser function with the given arguments."""
     parser_functions = {
-        '#expr': sharp_expr,
-        '#if': sharp_if,
-        '#ifeq': sharp_ifeq,
-        '#iferror': sharp_iferror,
-        '#ifexpr': lambda *args: '',
-        '#ifexist': lambda *args: '',
-        '#rel2abs': lambda *args: '',
-        '#switch': sharp_switch,
-        '#language': lambda *args: '',
-        '#time': lambda *args: '',
-        '#timel': lambda *args: '',
-        '#titleparts': lambda *args: '',
-        'urlencode': lambda string, *rest: urlencode(string),
-        'lc': lambda string, *rest: string.lower() if string else '',
-        'lcfirst': lambda string, *rest: lcfirst(string),
-        'uc': lambda string, *rest: string.upper() if string else '',
-        'ucfirst': lambda string, *rest: ucfirst(string),
-        'int': lambda string, *rest: str(int(string)),
-        'padleft': lambda char, width, string: string.ljust(char, int(width)),
+        "#expr": sharp_expr,
+        "#if": sharp_if,
+        "#ifeq": sharp_ifeq,
+        "#iferror": sharp_iferror,
+        "#ifexpr": lambda *args: "",
+        "#ifexist": lambda *args: "",
+        "#rel2abs": lambda *args: "",
+        "#switch": sharp_switch,
+        "#language": lambda *args: "",
+        "#time": lambda *args: "",
+        "#timel": lambda *args: "",
+        "#titleparts": lambda *args: "",
+        "urlencode": lambda string, *rest: urlencode(string),
+        "lc": lambda string, *rest: string.lower() if string else "",
+        "lcfirst": lambda string, *rest: lcfirst(string),
+        "uc": lambda string, *rest: string.upper() if string else "",
+        "ucfirst": lambda string, *rest: ucfirst(string),
+        "int": lambda string, *rest: str(int(string)),
+        "padleft": lambda char, width, string: string.ljust(char, int(width)),
     }
     try:
         # if function_name == '#invoke':

@@ -2,35 +2,60 @@
 Link processing for WikiExtractor
 Handles internal and external links
 """
+
 from __future__ import annotations
 
 import re
 from urllib.parse import quote as urlencode
 
 # Accepted namespaces for internal links
-ACCEPTED_NAMESPACES: list[str] = ['w']
+ACCEPTED_NAMESPACES: list[str] = ["w"]
 
-TAIL_RE: re.Pattern[str] = re.compile(r'\w+')
+TAIL_RE: re.Pattern[str] = re.compile(r"\w+")
 
 # URL protocols for external links
 URL_PROTOCOLS: list[str] = [
-    'bitcoin:', 'ftp://', 'ftps://', 'geo:', 'git://', 'gopher://', 'http://',
-    'https://', 'irc://', 'ircs://', 'magnet:', 'mailto:', 'mms://', 'news:',
-    'nntp://', 'redis://', 'sftp://', 'sip:', 'sips:', 'sms:', 'ssh://',
-    'svn://', 'tel:', 'telnet://', 'urn:', 'worldwind://', 'xmpp:', '//'
+    "bitcoin:",
+    "ftp://",
+    "ftps://",
+    "geo:",
+    "git://",
+    "gopher://",
+    "http://",
+    "https://",
+    "irc://",
+    "ircs://",
+    "magnet:",
+    "mailto:",
+    "mms://",
+    "news:",
+    "nntp://",
+    "redis://",
+    "sftp://",
+    "sip:",
+    "sips:",
+    "sms:",
+    "ssh://",
+    "svn://",
+    "tel:",
+    "telnet://",
+    "urn:",
+    "worldwind://",
+    "xmpp:",
+    "//",
 ]
 
 # External link patterns
 EXT_LINK_URL_CLASS: str = r'[^][<>"\x00-\x20\x7F\s]'
 EXT_LINK_BRACKETED_RE: re.Pattern[str] = re.compile(
-    r'\[((' + '|'.join(URL_PROTOCOLS) + ')' + EXT_LINK_URL_CLASS + r'+)\s*([^\]\x00-\x08\x0a-\x1F]*?)\]',
-    re.S | re.U | re.I
+    r"\[((" + "|".join(URL_PROTOCOLS) + ")" + EXT_LINK_URL_CLASS + r"+)\s*([^\]\x00-\x08\x0a-\x1F]*?)\]",
+    re.S | re.U | re.I,
 )
 
 EXT_IMAGE_RE: re.Pattern[str] = re.compile(
     r"""^(http://|https://)([^][<>"\x00-\x20\x7F\s]+)
     /([A-Za-z0-9_.,~%\-+&;#*?!=()@\x80-\xFF]+)\.(gif|png|jpg|jpeg)$""",
-    re.X | re.S | re.U | re.I
+    re.X | re.S | re.U | re.I,
 )
 
 
@@ -52,7 +77,7 @@ def _make_external_link(url: str, anchor: str, keep_links: bool = False) -> str:
         return anchor
 
 
-def _make_external_image(url: str, alt: str = '', keep_links: bool = False) -> str:
+def _make_external_image(url: str, alt: str = "", keep_links: bool = False) -> str:
     """
     Format external image based on settings.
 
@@ -83,14 +108,14 @@ def _make_internal_link(title: str, label: str, keep_links: bool = False) -> str
         Formatted link or empty string if filtered out
     """
     # Check namespace filtering
-    colon: int = title.find(':')
+    colon: int = title.find(":")
     if colon > 0 and title[:colon] not in ACCEPTED_NAMESPACES:
-        return ''
+        return ""
     if colon == 0:
         # Handle :File: etc.
-        colon2: int = title.find(':', colon + 1)
-        if colon2 > 1 and title[colon + 1:colon2] not in ACCEPTED_NAMESPACES:
-            return ''
+        colon2: int = title.find(":", colon + 1)
+        if colon2 > 1 and title[colon + 1 : colon2] not in ACCEPTED_NAMESPACES:
+            return ""
 
     if keep_links:
         return f'<a href="{urlencode(title)}">{label}</a>'
@@ -145,11 +170,11 @@ def clean_external_links(text: str) -> str:
     Returns:
         Text with external links processed
     """
-    result: str = ''
+    result: str = ""
     cur: int = 0
 
     for match in EXT_LINK_BRACKETED_RE.finditer(text):
-        result += text[cur:match.start()]
+        result += text[cur : match.start()]
         cur = match.end()
 
         url: str = match.group(1)
@@ -175,22 +200,22 @@ def clean_internal_links(text: str) -> str:
         Text with internal links processed
     """
     cur: int = 0
-    result: str = ''
+    result: str = ""
 
-    for start, end in _find_balanced(text, ['[['], [']]']):
+    for start, end in _find_balanced(text, ["[["], ["]]"]):
         # Check for trailing text (like 's' for plural)
         match: re.Match[str] | None = TAIL_RE.match(text, end)
         if match:
             trail: str = match.group(0)
             end_pos: int = match.end()
         else:
-            trail = ''
+            trail = ""
             end_pos = end
 
-        inner: str = text[start + 2:end - 2]
+        inner: str = text[start + 2 : end - 2]
 
         # Find first pipe separator
-        pipe: int = inner.find('|')
+        pipe: int = inner.find("|")
         if pipe < 0:
             title: str = inner
             label: str = title
@@ -198,12 +223,12 @@ def clean_internal_links(text: str) -> str:
             title = inner[:pipe].rstrip()
             # Find last pipe (in case of nested links)
             curp: int = pipe + 1
-            for s1, e1 in _find_balanced(inner, ['[['], [']]']):
-                last: int = inner.rfind('|', curp, s1)
+            for s1, e1 in _find_balanced(inner, ["[["], ["]]"]):
+                last: int = inner.rfind("|", curp, s1)
                 if last >= 0:
                     pipe = last
                 curp = e1
-            label = inner[pipe + 1:].strip()
+            label = inner[pipe + 1 :].strip()
 
         result += text[cur:start] + _make_internal_link(title, label) + trail
         cur = end_pos
