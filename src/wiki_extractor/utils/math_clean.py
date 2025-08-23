@@ -41,7 +41,9 @@ MATH_PATTERNS: list[str] = [
 ]
 
 # Create compiled patterns for math
-MATH_COMPILED_PATTERNS: list[re.Pattern] = [re.compile(pattern, re.DOTALL | re.MULTILINE) for pattern in MATH_PATTERNS]
+MATH_COMPILED_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(pattern, re.DOTALL | re.MULTILINE) for pattern in MATH_PATTERNS
+]
 
 
 def _apply_latex_symbol_replacements(text: str) -> str:
@@ -70,7 +72,7 @@ def _clean_latex_content(latex_content: str) -> str:
     return cleaned.strip()
 
 
-def _clean_math_content(match: re.Match) -> str:
+def _clean_math_content(match: re.Match[str]) -> str:
     latex_content: str = match.group(1).strip()
 
     if not re.search(r"[\\{}^_$|∑∏∫≤≥≠∞α-ωΑ-Ω]|frac|sum|prod|int|sqrt|begin|end", latex_content):

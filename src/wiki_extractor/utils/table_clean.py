@@ -41,7 +41,7 @@ def remove_attributes(text: str) -> str:
     return text.strip()
 
 
-def parse_row_cells(line: str) -> list:
+def parse_row_cells(line: str) -> list[str]:
     """Parse table row and return list of cells."""
     # Remove leading marker (| or !)
     if line.startswith(("|", "!")):

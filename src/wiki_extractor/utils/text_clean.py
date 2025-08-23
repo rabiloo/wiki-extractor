@@ -5,7 +5,6 @@ Main text processing and cleaning logic
 
 import html
 import re
-from typing import List
 
 from .html_clean import clean_html_elements, clean_html_entities
 from .link_clean import clean_external_links, clean_internal_links
@@ -40,7 +39,7 @@ DOTS_COMPILED_PATTERN: re.Pattern[str] = re.compile(r"\.{4,}")
 
 
 def _clean_transclusions(
-    text: str, open_delim: str = r"{{", close_delim: str = r"}}", preserve_templates: List[str] = None
+    text: str, open_delim: str = r"{{", close_delim: str = r"}}", preserve_templates: list[str] = []
 ) -> str:
     """
     Enhanced version that can preserve certain templates and convert them to Markdown.
@@ -54,7 +53,7 @@ def _clean_transclusions(
     Returns:
         Text with nested expressions removed or converted
     """
-    if preserve_templates is None:
+    if not preserve_templates:
         preserve_templates = [
             "cite web",
             "cite journal",
@@ -78,18 +77,18 @@ def _clean_transclusions(
 
     preserve_templates = [name.lower() for name in preserve_templates]
 
-    open_re = re.compile(open_delim, re.IGNORECASE)
-    close_re = re.compile(close_delim, re.IGNORECASE)
+    open_re: re.Pattern[str] = re.compile(open_delim, re.IGNORECASE)
+    close_re: re.Pattern[str] = re.compile(close_delim, re.IGNORECASE)
 
-    replacements = []  # List of (start, end, replacement_text)
-    nest = 0
-    start = open_re.search(text, 0)
+    replacements: list[tuple[int, int, str]] = []  # List of (start, end, replacement_text)
+    nest: int = 0
+    start: re.Match[str] | None = open_re.search(text, 0)
 
     if not start:
         return text
 
-    end = close_re.search(text, start.end())
-    next_match = start
+    end: re.Match[str] | None = close_re.search(text, start.end())
+    next_match: re.Match[str] | None = start
 
     while end:
         next_match = open_re.search(text, next_match.end())
@@ -97,14 +96,14 @@ def _clean_transclusions(
             # Handle remaining nested structures
             while nest:
                 nest -= 1
-                end0 = close_re.search(text, end.end())
+                end0: re.Match[str] | None = close_re.search(text, end.end())
                 if end0:
                     end = end0
                 else:
                     break
 
             # Extract and process template content
-            template_content = text[start.start() + 2 : end.start()]
+            template_content = text[start.start() + 2: end.start()]
             params = parse_template_content(template_content)
             template_name = params.get("_template_name", "")
 
@@ -121,7 +120,7 @@ def _clean_transclusions(
         while end.end() < next_match.start():
             if nest:
                 nest -= 1
-                last = end.end()
+                last: int = end.end()
                 end = close_re.search(text, end.end())
                 if not end:
                     # Unbalanced - remove everything from start
@@ -129,7 +128,7 @@ def _clean_transclusions(
                     break
             else:
                 # Process this complete template
-                template_content = text[start.start() + 2 : end.start()]
+                template_content = text[start.start() + 2: end.start()]
                 params = parse_template_content(template_content)
                 template_name = params.get("_template_name", "")
 
@@ -151,7 +150,7 @@ def _clean_transclusions(
 
     # Apply replacements in reverse order to maintain positions
     replacements.sort(reverse=True)
-    result = text
+    result: str = text
 
     for start_pos, end_pos, replacement in replacements:
         result = result[:start_pos] + replacement + result[end_pos:]
@@ -164,7 +163,7 @@ def _clean_tables(text: str) -> str:
     # Pattern to match wiki tables
     pattern = r"\{\|.*?\n\|\}"
 
-    def replace_table(match):
+    def replace_table(match: re.Match[str]) -> str:
         try:
             return convert_table_to_markdown(match.group(0))
         except Exception as e:

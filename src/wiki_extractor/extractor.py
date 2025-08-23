@@ -24,7 +24,7 @@ LIST_ITEM_RE = re.compile(r"^([*#:;]+)\s*(.*)$")
 logger = logging.getLogger(__name__)
 
 
-def get_wikipedia_raw_content(url: str) -> tuple[str, str | None]:
+def get_wikipedia_raw_content(url: str, timeout: int = 30) -> tuple[str, str | None]:
     """Fetch Wikipedia content from URL."""
     # Extract title from URL
     title: str = url.split("/wiki/")[-1].replace("_", " ")
@@ -41,7 +41,7 @@ def get_wikipedia_raw_content(url: str) -> tuple[str, str | None]:
     }
 
     try:
-        response: requests.Response = requests.get(api_url, params=params)
+        response: requests.Response = requests.get(api_url, params=params, timeout=timeout)
         if response.status_code != 200:
             logger.error(f"Failed to fetch content from {url}: HTTP {response.status_code}")
             return title, None
@@ -96,8 +96,8 @@ class Extractor:
         headers: dict[int, str] = {}  # Headers for unfilled sections
         empty_section: bool = False  # empty sections are discarded
         skip_section: bool = False  # sections to discard
-        in_list = False  # tracking if we're in a list
-        list_stack = []  # stack to track nested lists
+        in_list: bool = False  # tracking if we're in a list
+        list_stack: list[str] = []  # stack to track nested lists
 
         lines = text.split("\n")
         i = 0
@@ -186,7 +186,7 @@ class Extractor:
                     # Term and definition on same line
                     colon_pos = line.find(":")
                     term = line[1:colon_pos].strip()
-                    definition = line[colon_pos + 1 :].strip()
+                    definition = line[colon_pos + 1:].strip()
 
                     if add_markdown_header:
                         page.append("**" + term + "**")
@@ -376,22 +376,21 @@ class Extractor:
         while result and not result[-1].strip():
             result.pop()
 
-        content: str = "\n".join(result)
-        return content
+        return "\n".join(result)
 
-    def expand_templates(self, wikitext: str, language: str | None = None) -> str | None:
-        return self.template_processor.expand_templates(wikitext, language)
+    # def expand_templates(self, wikitext: str, language: str | None = None) -> str | None:
+    #     return self.template_processor.expand_templates(wikitext, language)
+    #
+    # def expand_template(self, body: str, language: str | None = None) -> str | None:
+    #     return self.template_processor.expand_template(body, language)
+    #
+    # def template_params(self, parameters: str) -> list[Any]:
+    #     return self.template_processor.template_params(parameters)
 
-    def expand_template(self, body: str, language: str | None = None) -> str | None:
-        return self.template_processor.expand_template(body, language)
-
-    def template_params(self, parameters: str) -> list[Any]:
-        return self.template_processor.template_params(parameters)
-
-    @property
-    def frame(self) -> list[Any]:
-        """Get the current template frame stack."""
-        return self.template_processor.frame
+    # @property
+    # def frame(self) -> list[Any]:
+    #     """Get the current template frame stack."""
+    #     return self.template_processor.frame
 
     def clean_content(
         self,

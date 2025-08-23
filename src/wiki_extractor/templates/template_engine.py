@@ -9,7 +9,7 @@ import re
 MAX_PARAMETER_RECURSION_LEVELS = 16
 
 
-def find_matching_braces(text, num_braces):
+def find_matching_braces(text: str, num_braces: int) -> list[tuple[int, int]]:
     """
     Find matching braces in text.
 
@@ -23,8 +23,8 @@ def find_matching_braces(text, num_braces):
     open_delim = "{" * num_braces
     close_delim = "}" * num_braces
 
-    spans = []
-    stack = []
+    spans: list[tuple[int, int]] = []
+    stack: list[int] = []
 
     i = 0
     while i < len(text):
@@ -42,7 +42,7 @@ def find_matching_braces(text, num_braces):
     return spans
 
 
-def split_parts(text):
+def split_parts(text: str) -> list[str]:
     """
     Split template or function parameters by pipes, respecting nested structures.
 
@@ -52,7 +52,7 @@ def split_parts(text):
     Returns:
         List of parameter parts
     """
-    parts = []
+    parts: list[str] = []
     current = ""
     depth = 0
 
@@ -105,7 +105,7 @@ class Template(list):
     """
 
     @classmethod
-    def parse(cls, body):
+    def parse(cls, body: str) -> "Template":
         """
         Parse template body into Template object.
 
@@ -124,12 +124,12 @@ class Template(list):
         start = 0
         for s, e in find_matching_braces(body, 3):
             tpl.append(TemplateText(body[start:s]))
-            tpl.append(TemplateArg(body[s + 3 : e - 3]))
+            tpl.append(TemplateArg(body[s + 3: e - 3]))
             start = e
         tpl.append(TemplateText(body[start:]))  # leftover
         return tpl
 
-    def subst(self, params, extractor, depth=0):
+    def subst(self, params: dict[str, str], extractor: object, depth: int = 0) -> str:
         """
         Substitute parameters in template.
 
@@ -153,7 +153,7 @@ class Template(list):
 
         return "".join([tpl.subst(params, extractor, depth) for tpl in self])
 
-    def __str__(self):
+    def __str__(self) -> str:
         """String representation of template."""
         return "".join([str(x) for x in self if x is not None])
 
@@ -161,7 +161,7 @@ class Template(list):
 class TemplateText(str):
     """Fixed text of template"""
 
-    def subst(self, params, extractor, depth):
+    def subst(self, params: dict[str, str], extractor: object, depth: int) -> str:
         """
         Substitute parameters (no-op for fixed text).
 
@@ -182,7 +182,7 @@ class TemplateArg:
     Has a name and a default value, both of which are Templates.
     """
 
-    def __init__(self, parameter):
+    def __init__(self, parameter: str) -> None:
         """
         Initialize template argument.
 
@@ -197,21 +197,21 @@ class TemplateArg:
         # ignored, and an equals sign in the first part is treated as plain text.
 
         parts = split_parts(parameter)
-        self.name = Template.parse(parts[0])
+        self.name: Template = Template.parse(parts[0])
         if len(parts) > 1:
             # This parameter has a default value
-            self.default = Template.parse(parts[1])
+            self.default: Template | None = Template.parse(parts[1])
         else:
             self.default = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         """String representation of template argument."""
         if self.default:
             return "{{{%s|%s}}}" % (self.name, self.default)
         else:
             return "{{{%s}}}" % self.name
 
-    def subst(self, params, extractor, depth):
+    def subst(self, params: dict[str, str], extractor: object, depth: int) -> str:
         """
         Substitute value for this argument from parameter dictionary.
 
@@ -240,7 +240,7 @@ class TemplateArg:
         return result
 
 
-def parse_template_parameters(parameters):
+def parse_template_parameters(parameters: list[str]) -> dict[str, str]:
     """
     Build a dictionary with positional or named keys to expanded parameters.
 
@@ -250,7 +250,7 @@ def parse_template_parameters(parameters):
     Returns:
         Dictionary of template parameters
     """
-    template_params = {}
+    template_params: dict[str, str] = {}
 
     if not parameters:
         return template_params
@@ -293,8 +293,8 @@ def parse_template_parameters(parameters):
             # parameter ("2") is specified explicitly - this is handled
             # transparently.
 
-            parameter_name = m.group(1).strip()
-            parameter_value = m.group(2)
+            parameter_name: str = m.group(1).strip()
+            parameter_value: str = m.group(2)
 
             if "]]" not in parameter_value:  # if the value does not contain a link, trim whitespace
                 parameter_value = parameter_value.strip()

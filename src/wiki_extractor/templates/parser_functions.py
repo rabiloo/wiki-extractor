@@ -1,4 +1,5 @@
 import re
+from typing import Any
 from urllib.parse import quote as urlencode
 
 
@@ -45,7 +46,7 @@ def sharp_expr(expr: str) -> str:
         return '<span class="error"></span>'
 
 
-def sharp_if(test_value: str, value_if_true: str, value_if_false: str = None, *args) -> str:
+def sharp_if(test_value: str, value_if_true: str, value_if_false: str = "", *args: Any) -> str:
     """Implement #if parser function."""
     if test_value.strip():
         value_if_true = value_if_true.strip()
@@ -56,7 +57,7 @@ def sharp_if(test_value: str, value_if_true: str, value_if_false: str = None, *a
     return ""
 
 
-def sharp_ifeq(lvalue: str, rvalue: str, value_if_true: str, value_if_false: str = None, *args) -> str:
+def sharp_ifeq(lvalue: str, rvalue: str, value_if_true: str, value_if_false: str = "", *args: Any) -> str:
     """Implement #ifeq parser function."""
     rvalue = rvalue.strip()
     if rvalue and lvalue.strip() == rvalue:
@@ -67,30 +68,30 @@ def sharp_ifeq(lvalue: str, rvalue: str, value_if_true: str, value_if_false: str
     return ""
 
 
-def sharp_iferror(test: str, then: str = "", else_val: str = None, *args) -> str:
+def sharp_iferror(test: str, then: str = "", else_val: str = "", *args: Any) -> str:
     """Implement #iferror parser function."""
     if re.match(r'<(?:strong|span|p|div)\s(?:[^\s>]*\s+)*?class="(?:[^"\s>]*\s+)*?error(?:\s[^">]*)?"', test):
         return then
-    return test.strip() if else_val is None else else_val.strip()
+    return test.strip() if not else_val else else_val.strip()
 
 
-def sharp_switch(primary: str, *params) -> str:
+def sharp_switch(primary: str, *params: str) -> str:
     """Implement #switch parser function."""
     primary = primary.strip()
     found = False
-    default = None
-    rvalue = None
-    lvalue = ""
+    default: str = ""
+    rvalue: str = ""
+    lvalue: str = ""
     for param in params:
-        pair = param.split("=", 1)
+        pair: list[str] = param.split("=", 1)
         lvalue = pair[0].strip()
-        rvalue = pair[1].strip() if len(pair) > 1 else None
+        rvalue = pair[1].strip() if len(pair) > 1 else ""
         if found or primary in [v.strip() for v in lvalue.split("|")]:
             return rvalue
         if lvalue == "#default":
             default = rvalue
-        rvalue = None
-    return lvalue if rvalue is not None else default or ""
+        rvalue = ""
+    return lvalue if rvalue else default or ""
 
 
 # def sharp_invoke(module: str, function: str, frame: list) -> str:
@@ -107,9 +108,9 @@ def sharp_switch(primary: str, *params) -> str:
 #     return ""
 
 
-def call_parser_function(function_name: str, args: list, frame: list) -> str:
+def call_parser_function(function_name: str, args: list[Any], frame: list[Any]) -> str:
     """Call a parser function with the given arguments."""
-    parser_functions = {
+    parser_functions: dict[str, Any] = {
         "#expr": sharp_expr,
         "#if": sharp_if,
         "#ifeq": sharp_ifeq,

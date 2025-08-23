@@ -78,53 +78,53 @@ DISCARD_ELEMENTS: list[str] = [
 SELF_CLOSING_TAGS: tuple[str, ...] = ("br", "hr", "nobr", "ref", "references", "nowiki")
 
 # HTML and XML patterns
-BOLD_ITALIC_RE: re.Pattern = re.compile(r"'''''(.*?)'''''")
-BOLD_RE: re.Pattern = re.compile(r"'''(.*?)'''")
-COMMENT_RE: re.Pattern = re.compile(r"<!--.*?-->", re.DOTALL)
-SYNTAXHIGHLIGHT_RE: re.Pattern = re.compile(r"&lt;syntaxhighlight .*?&gt;(.*?)&lt;/syntaxhighlight&gt;", re.DOTALL)
+BOLD_ITALIC_RE: re.Pattern[str] = re.compile(r"'''''(.*?)'''''")
+BOLD_RE: re.Pattern[str] = re.compile(r"'''(.*?)'''")
+COMMENT_RE: re.Pattern[str] = re.compile(r"<!--.*?-->", re.DOTALL)
+SYNTAXHIGHLIGHT_RE: re.Pattern[str] = re.compile(r"&lt;syntaxhighlight .*?&gt;(.*?)&lt;/syntaxhighlight&gt;", re.DOTALL)
 
 # Bold and italic patterns
-ITALIC_QUOTE_RE: re.Pattern = re.compile(r"''\"([^\"]*?)\"''")
-ITALIC_RE: re.Pattern = re.compile(r"''(.*?)''")
-QUOTE_QUOTE_RE: re.Pattern = re.compile(r'""([^"]*?)""')
+ITALIC_QUOTE_RE: re.Pattern[str] = re.compile(r"''\"([^\"]*?)\"''")
+ITALIC_RE: re.Pattern[str] = re.compile(r"''(.*?)''")
+QUOTE_QUOTE_RE: re.Pattern[str] = re.compile(r'""([^"]*?)""')
 
 # Self-closing tag patterns
-SELF_CLOSING_PATTERNS: list[re.Pattern] = [
+SELF_CLOSING_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"<\s*%s\b[^>]*/\s*>" % tag, re.DOTALL | re.IGNORECASE) for tag in SELF_CLOSING_TAGS
 ]
 
 
 # Ignored tag patterns (compiled dynamically)
-def _create_ignored_tag_patterns() -> list[tuple[re.Pattern, re.Pattern]]:
+def _create_ignored_tag_patterns() -> list[tuple[re.Pattern[str], re.Pattern[str]]]:
     """Create patterns for ignored HTML tags"""
-    patterns: list[tuple[re.Pattern, re.Pattern]] = []
+    patterns: list[tuple[re.Pattern[str], re.Pattern[str]]] = []
     for tag in IGNORED_TAGS:
-        left: re.Pattern = re.compile(r"<%s\b.*?>" % tag, re.IGNORECASE | re.DOTALL)
-        right: re.Pattern = re.compile(r"</\s*%s>" % tag, re.IGNORECASE)
+        left: re.Pattern[str] = re.compile(r"<%s\b.*?>" % tag, re.IGNORECASE | re.DOTALL)
+        right: re.Pattern[str] = re.compile(r"</\s*%s>" % tag, re.IGNORECASE)
         patterns.append((left, right))
     return patterns
 
 
 # Placeholder tag patterns
-def _create_placeholder_tag_patterns() -> list[tuple[re.Pattern, str]]:
+def _create_placeholder_tag_patterns() -> list[tuple[re.Pattern[str], str]]:
     """Create patterns for placeholder tags"""
-    patterns: list[tuple[re.Pattern, str]] = []
+    patterns: list[tuple[re.Pattern[str], str]] = []
     for tag, repl in PLACEHOLDER_TAGS.items():
-        pattern: re.Pattern = re.compile(
+        pattern: re.Pattern[str] = re.compile(
             r"<\s*%s(\s*| [^>]+?)>.*?<\s*/\s*%s\s*>" % (tag, tag), re.DOTALL | re.IGNORECASE
         )
         patterns.append((pattern, repl))
     return patterns
 
 
-IGNORED_TAG_PATTERNS: list[tuple[re.Pattern, re.Pattern]] = _create_ignored_tag_patterns()
-PLACEHOLDER_TAG_PATTERNS: list[tuple[re.Pattern, str]] = _create_placeholder_tag_patterns()
+IGNORED_TAG_PATTERNS: list[tuple[re.Pattern[str], re.Pattern[str]]] = _create_ignored_tag_patterns()
+PLACEHOLDER_TAG_PATTERNS: list[tuple[re.Pattern[str], str]] = _create_placeholder_tag_patterns()
 
 
 def drop_nested(text: str, open_delim: str, close_delim: str) -> str:
     """Remove nested expressions (e.g., templates, tables) from text."""
-    open_re: re.Pattern = re.compile(open_delim, re.IGNORECASE)
-    close_re: re.Pattern = re.compile(close_delim, re.IGNORECASE)
+    open_re: re.Pattern[str] = re.compile(open_delim, re.IGNORECASE)
+    close_re: re.Pattern[str] = re.compile(close_delim, re.IGNORECASE)
     spans: list[tuple[int, int]] = []
     nest: int = 0
     start = open_re.search(text, 0)

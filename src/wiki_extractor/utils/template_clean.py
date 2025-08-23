@@ -1,5 +1,4 @@
 import re
-from typing import Dict
 
 entities = {
     # Math operators
@@ -88,7 +87,7 @@ operators = ["=", "≠", "≈", "±", "×", "÷", "≤", "≥", "+", "-", "→",
 special_chars = "×÷±≤≥≠≈∞∑∏∫√αβγδθλμπσφωΔΓΛΩ∈∉⊂∪∩∅∃∀→←↔⇒⇐"
 
 
-def parse_template_content(template_content: str) -> Dict[str, str]:
+def parse_template_content(template_content: str) -> dict[str, str]:
     """
     Parse template content to extract parameters.
 
@@ -138,7 +137,7 @@ def parse_template_content(template_content: str) -> Dict[str, str]:
     return params
 
 
-def convert_cite_web_to_markdown(params: Dict[str, str]) -> str:
+def convert_cite_web_to_markdown(params: dict[str, str]) -> str:
     """Convert {{cite web}} template to Markdown format."""
     title = params.get("title", "")
     url = params.get("url", "")
@@ -174,7 +173,7 @@ def convert_cite_web_to_markdown(params: Dict[str, str]) -> str:
     return markdown
 
 
-def convert_cite_journal_to_markdown(params: Dict[str, str]) -> str:
+def convert_cite_journal_to_markdown(params: dict[str, str]) -> str:
     """Convert {{cite journal}} template to Markdown format."""
     title = params.get("title", "")
     journal = params.get("journal", "")
@@ -219,7 +218,7 @@ def convert_cite_journal_to_markdown(params: Dict[str, str]) -> str:
     return markdown
 
 
-def convert_cite_book_to_markdown(params: Dict[str, str]) -> str:
+def convert_cite_book_to_markdown(params: dict[str, str]) -> str:
     """Convert {{cite book}} template to Markdown format."""
     title = params.get("title", "")
     author = params.get("author", params.get("last", ""))
@@ -262,7 +261,7 @@ def convert_cite_book_to_markdown(params: Dict[str, str]) -> str:
     return markdown
 
 
-def convert_image_to_markdown(params: Dict[str, str]) -> str:
+def convert_image_to_markdown(params: dict[str, str]) -> str:
     """Convert image templates to Markdown format."""
     # Extract image name from first parameter or 'file' parameter
     image_name = params.get("1", params.get("file", ""))
@@ -330,7 +329,7 @@ def convert_math_html_template_to_markdown(content: str) -> str:
     return content
 
 
-def convert_template_to_markdown(template_name: str, params: Dict[str, str]) -> str:
+def convert_template_to_markdown(template_name: str, params: dict[str, str]) -> str:
     """Convert various templates to Markdown format."""
     template_name = template_name.lower().strip()
 
