@@ -9,7 +9,6 @@ from typing import Any
 
 import requests
 
-from .utils.html_clean import drop_nested
 from .utils.text_clean import clean_text
 
 # File separator for output
@@ -20,6 +19,7 @@ SECTION_RE: re.Pattern[str] = re.compile(r'(==+)\s*(.*?)\s*\1')
 LIST_OPEN: dict[str, str] = {'*': '<ul>', '#': '<ol>', ';': '<dl>', ':': '<dl>'}
 LIST_CLOSE: dict[str, str] = {'*': '</ul>', '#': '</ol>', ';': '</dl>', ':': '</dl>'}
 LIST_ITEM: dict[str, str] = {'*': '<li>%s</li>', '#': '<li>%s</<li>', ';': '<dt>%s</dt>', ':': '<dd>%s</dd>'}
+LIST_ITEM_RE = re.compile(r"^([*#:;]+)\s*(.*)$")
 
 logger = logging.getLogger(__name__)
 
@@ -95,132 +95,287 @@ class Extractor:
         headers: dict[int, str] = {}  # Headers for unfilled sections
         empty_section: bool = False  # empty sections are discarded
         skip_section: bool = False  # sections to discard
-        list_level: str = ''  # nesting of lists
+        in_list = False  # tracking if we're in a list
+        list_stack = []  # stack to track nested lists
 
-        for line in text.split('\n'):
+        lines = text.split("\n")
+        i = 0
+
+        while i < len(lines):
+            line = lines[i].rstrip()
+
+            # Skip empty lines but handle list closures
             if not line:
-                if len(list_level):  # implies Extractor.HtmlFormatting
-                    for c in reversed(list_level):
-                        page.append(LIST_CLOSE[c])
-                    list_level = ''
+                if in_list:
+                    # End current list context
+                    in_list = False
+                    list_stack = []
+                    if page and not page[-1].strip():
+                        pass  # Don't add extra empty lines
+                    else:
+                        page.append("")
+                elif not empty_section and page and page[-1].strip():
+                    page.append("")  # Add paragraph break
+                i += 1
                 continue
 
-            # Handle section titles
-            m: re.Match[str] | None = SECTION_RE.match(line)
-            if m:
-                title: str = m.group(2)
+            # Handle section titles (== Title ==, === Title ===, etc.)
+            section_match = SECTION_RE.match(line)
+            if section_match:
+                title = section_match.group(2).strip()
 
-                # Discard non-desired sections
-                if title.lower() in self.discard_sections:
+                # Check if this section should be discarded
+                if hasattr(Extractor, "discardSections") and title.lower() in self.discard_sections:
                     skip_section = True
                     empty_section = True
+                    i += 1
                     continue
                 else:
                     skip_section = False
 
-                lev: int = len(m.group(1))
-                if html_formatting:
-                    page.append("<h%d>%s</h%d>" % (lev, title, lev))
-                if title and title[-1] not in '!?':
-                    title += '.'
+                # Close any open lists
+                if in_list:
+                    in_list = False
+                    list_stack = []
 
+                level = len(section_match.group(1))
+
+                # Convert to Markdown headers
                 if add_markdown_header:
-                    title = "#" * lev + " " + title
-
-                headers[lev] = title
-                # drop previous headers
-                headers = {k: v for k, v in headers.items() if k <= lev}
-                empty_section = True
-                continue
-
-            # Handle non-desired sections content
-            if skip_section:
-                continue
-
-            # Handle page title
-            if line.startswith('++'):
-                title = line[2:-2]
-                if title:
-                    if title[-1] not in '!?':
-                        title += '.'
-                    page.append(title)
-                    continue
-
-            # handle indents  # SOmetimes are indents before lists,etc.
-            elif line.startswith(':'):
-                # page.append(line.lstrip(':'))
-                line = line.lstrip(':')
-                if not line:
-                    continue
-
-            # handle lists
-            #   @see https://www.mediawiki.org/wiki/Help:Formatting
-            if line.startswith(('*', '#', ';')):  # lists and enumerations
-                if html_formatting:  # HTML output format
-                    # close extra levels
-                    l_idx: int = 0
-                    for c in list_level:
-                        if l_idx < len(line) and c != line[l_idx]:
-                            for extra in reversed(list_level[l_idx:]):
-                                page.append(LIST_CLOSE[extra])
-                            list_level = list_level[:l_idx]
-                            break
-                        l_idx += 1
-                    if l_idx < len(line) and line[l_idx] in '*#;:':
-                        # add new level (only one, no jumps)
-                        # FIXME: handle jumping levels
-                        l_type: str = line[l_idx]
-                        page.append(LIST_OPEN[l_type])
-                        list_level += l_type
-                        line = line[l_idx + 1:].strip()
+                    # Wikipedia uses = for page title, == for main sections
+                    # Convert appropriately to Markdown levels
+                    if level == 1:
+                        markdown_level = 1  # Main title
+                    elif level == 2:
+                        markdown_level = 2  # Main sections
                     else:
-                        # continue on same level
-                        l_type = list_level[l_idx - 1]
-                        line = line[l_idx:].strip()
-                    page.append(LIST_ITEM[l_type] % line)
-                else:  # txt or json: (maintaining depth levels)
-                    # Here the first line in the section is a list
-                    if headers:
-                        if self.keep_sections:
-                            items = sorted(headers.items())
-                            page.append('\n')
-                            for (_, v) in items:
-                                page.append(v)  # header title
-                        headers.clear()
-                    list_item: str = re.sub('[;#*]', ' ', line)
-                    # Fixme? sometimes list before indent: "#:"
-                    list_item = re.sub(r"(^ *)(.+)", r"\1- \2", list_item)
-                    page.append(list_item)
+                        markdown_level = min(level, 6)  # Sub-sections
+
+                    # Add some spacing before headers (except first one)
+                    if page and page[-1].strip():
+                        page.append("")
+
+                    page.append("#" * markdown_level + " " + title)
+                    page.append("")  # Add space after header
+
+                headers[level] = title
+                headers = {k: v for k, v in headers.items() if k <= level}
+                empty_section = True
+                i += 1
+                continue
+
+            # Skip content in discarded sections
+            if skip_section:
+                i += 1
+                continue
+
+            # Handle page title markers
+            if line.startswith("++") and line.endswith("++"):
+                title = line[2:-2].strip()
+                if title and add_markdown_header:
+                    page.append("# " + title)
+                    page.append("")
+                empty_section = False
+                i += 1
+                continue
+
+            # Handle definition lists (;term:definition or ;term followed by :definition)
+            if line.startswith(";"):
+                if ":" in line:
+                    # Term and definition on same line
+                    colon_pos = line.find(":")
+                    term = line[1:colon_pos].strip()
+                    definition = line[colon_pos + 1 :].strip()
+
+                    if add_markdown_header:
+                        page.append("**" + term + "**")
+                        if definition:
+                            page.append(definition)
+                    else:
+                        page.append(term + ": " + definition)
+                else:
+                    # Term only, definition might follow
+                    term = line[1:].strip()
+                    if add_markdown_header:
+                        page.append("**" + term + "**")
+                    else:
+                        page.append(term)
+
+                    # Check if next line is a definition
+                    if i + 1 < len(lines) and lines[i + 1].startswith(":"):
+                        i += 1
+                        def_line = lines[i].lstrip(":").strip()
+                        if def_line:
+                            page.append(def_line)
+
+                in_list = True
+                list_stack = ["dl"]
+                empty_section = False
+                i += 1
+                continue
+
+            # Handle blockquotes/indented content (:text)
+            elif line.startswith(":") and not line.startswith("::"):
+                content = line.lstrip(":").strip()
+                if content:
+                    # Count indentation level
+                    indent_level = len(line) - len(line.lstrip(":"))
+                    if add_markdown_header:
+                        page.append("> " + content)
+                    else:
+                        page.append("    " * indent_level + content)
+                empty_section = False
+                i += 1
+                continue
+
+            # Handle lists (* for unordered, # for ordered)
+            list_match = LIST_ITEM_RE.match(line)
+            if list_match:
+                markers = list_match.group(1)
+                content = list_match.group(2).strip()
+
+                if not content:
+                    i += 1
+                    continue
+
+                # Determine list type and depth
+                depth = len(markers)
+                list_type = markers[-1]  # Last character determines type
+
+                # Handle nested lists
+                while len(list_stack) > depth:
+                    list_stack.pop()
+
+                while len(list_stack) < depth:
+                    if list_type == "*":
+                        list_stack.append("ul")
+                    elif list_type == "#":
+                        list_stack.append("ol")
+                    else:
+                        list_stack.append("ul")  # Default to unordered
+
+                if not in_list:
+                    in_list = True
+
+                # Create appropriate indentation
+                indent = "  " * (depth - 1)
+
+                if list_type == "*":
+                    marker = "- "
+                elif list_type == "#":
+                    marker = "1. "
+                else:
+                    marker = "- "
+
+                # Handle special content patterns
+                if "–" in content or "—" in content:
+                    # Handle em-dash separated content (common in Wikipedia)
+                    dash_char = "–" if "–" in content else "—"
+                    parts = content.split(dash_char, 1)
+                    if len(parts) == 2:
+                        term = parts[0].strip()
+                        desc = parts[1].strip()
+                        page.append(indent + marker + "**" + term + "** – " + desc)
+                    else:
+                        page.append(indent + marker + content)
+                else:
+                    page.append(indent + marker + content)
+
+                empty_section = False
+                i += 1
+                continue
+
+            # Close any open lists if we encounter non-list content
+            if in_list:
+                in_list = False
+                list_stack = []
+
+            # Handle table remnants and irrelevant markup
+            if (
+                line.startswith("{|")
+                or line.startswith("|}")
+                or line.startswith("|-")
+                or line.startswith("!")
+                or line.startswith("|+")
+            ):
+                i += 1
+                continue
+
+            # Skip lines that are just punctuation or parentheses
+            stripped = line.strip()
+            if (stripped.startswith("(") and stripped.endswith(")") and len(stripped) > 2) or stripped in [
+                "",
+                ".",
+                "-",
+                "--",
+                "---",
+                "....",
+            ]:
+                i += 1
+                continue
+
+            # Handle regular paragraph content
+            if stripped:
+                # Add headers if this is the first content in a section
+                if len(headers) and empty_section:
+                    if hasattr(Extractor, "keepSections") and Extractor.keepSections and not add_markdown_header:
+                        items = sorted(headers.items())
+                        for level, header_title in items:
+                            page.append(header_title)
+                    headers.clear()
+
+                # Clean up common Wikipedia artifacts
+                cleaned_line = line.strip()
+
+                # Remove file/image references
+                cleaned_line = re.sub(r"\[\[File:.*?\]\]", "", cleaned_line)
+                cleaned_line = re.sub(r"\[\[Image:.*?\]\]", "", cleaned_line)
+
+                # Handle simple wikilinks [[Link]] or [[Link|Display]]
+                cleaned_line = re.sub(r"\[\[([^|\]]+)\|([^\]]+)\]\]", r"[\2](\1)", cleaned_line)
+                cleaned_line = re.sub(r"\[\[([^\]]+)\]\]", r"[\1](\1)", cleaned_line)
+
+                # Handle external links [URL Display] or [URL]
+                cleaned_line = re.sub(r"\[([^\s\]]+)\s+([^\]]+)\]", r"[\2](\1)", cleaned_line)
+                cleaned_line = re.sub(r"\[([^\s\]]+)\]", r"[\1](\1)", cleaned_line)
+
+                # Handle bold/italic markup
+                cleaned_line = re.sub(r"'''([^']+)'''", r"**\1**", cleaned_line)  # Bold
+                cleaned_line = re.sub(r"''([^']+)''", r"*\1*", cleaned_line)  # Italic
+
+                # Remove template calls {{template}}
+                cleaned_line = re.sub(r"\{\{[^}]*\}\}", "", cleaned_line)
+
+                # Remove HTML comments
+                cleaned_line = re.sub(r"<!--.*?-->", "", cleaned_line)
+
+                cleaned_line = cleaned_line.strip()
+
+                if cleaned_line:
+                    page.append(cleaned_line)
                     empty_section = False
 
-            elif len(list_level):  # implies Extractor.HtmlFormatting
-                for c in reversed(list_level):
-                    page.append(LIST_CLOSE[c])
-                list_level = ''
+            i += 1
 
-            # Drop residuals of lists
-            elif line.startswith('{') or line.endswith('}'):
+        # Clean up the final output
+        result = []
+        prev_empty = False
+
+        for line in page:
+            is_empty = not line.strip()
+
+            # Avoid multiple consecutive empty lines
+            if is_empty and prev_empty:
                 continue
-            # Drop irrelevant lines
-            elif (line.startswith('(') and line.endswith(')')) or line.strip('.-') == '':
-                continue
 
-            # Write header if not an empty section
-            elif headers:
-                if self.keep_sections:
-                    items = sorted(headers.items())
-                    page.append('\n')
-                    for (_, v) in items:
-                        page.append(v)  # header title
-                headers.clear()
-                #   here we control a section where there is a list before
-                #      text content
-                page.append(line)  # first line
-                empty_section = False
-            elif not empty_section:
-                page.append(line)
+            result.append(line)
+            prev_empty = is_empty
 
-        content: str = "\n".join(page)
+        # Remove trailing empty lines
+        while result and not result[-1].strip():
+            result.pop()
+
+        content: str = "\n".join(result)
         return content
 
     def expand_templates(self, wikitext: str, language: str | None = None) -> str | None:
@@ -256,16 +411,11 @@ class Extractor:
         Returns:
             Cleaned text as list of paragraphs
         """
-        # Clean the text
-        processed_text = drop_nested(text, r'{{', r'}}')
-
-        cleaned_text: str | None = clean_text(processed_text, html_safe, html_formatting)
+        cleaned_text: str | None = clean_text(text, html_safe, html_formatting)
 
         if cleaned_text is None:
             return ""
 
         return self._output_markdown(
-            cleaned_text,
-            add_markdown_header=add_markdown_header,
-            html_formatting=html_formatting
+            cleaned_text, add_markdown_header=add_markdown_header, html_formatting=html_formatting
         )
