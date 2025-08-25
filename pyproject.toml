@@ -1,0 +1,42 @@
+[build-system]
+requires = [ "setuptools>=61.0" ]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wiki-extractor"
+version = "1.0.0"
+description = "A Python library for extracting clean text from Wikipedia articles"
+readme = "README.md"
+keywords = ["wikipedia", "text extraction", "markup processing", "nlp", "text mining"]
+authors = [
+    { name = "Phong Ngo", email = "phongng@rabiloo.com" }
+]
+maintainers = [
+    { name = "Rabiloo Developers", email = "oss@rabiloo.com" },
+]
+license = { text = "The MIT License" }
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 2 - Pre-Alpha",
+]
+dependencies = [
+    "beautifulsoup4>=4.9.0",
+    "requests>=2.25.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0.0",
+    "pytest-cov>=2.10.0",
+    "mypy>=0.800",
+    "ruff>=0.0.241",
+    "bandit>=1.8.3"
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/rabiloo/wiki-extractor/issues"
+"Homepage" = "https://github.com/rabiloo/wiki-extractor/wiki-extractor"
+"Repository" = "https://github.com/rabiloo/wiki-extractor/wiki-extractor"
